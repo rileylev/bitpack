@@ -1,0 +1,7 @@
+build
+CMakeFiles
+.DS_Store
+.idea
+*.log
+tmp/
+CMakeCache.txt
