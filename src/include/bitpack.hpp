@@ -7,37 +7,44 @@
 #include <cstdint>
 #include <bit>
 #include <tuple>
-#include <assert.h>
 
-#ifdef __GNUC__
+#if defined(__GNUC__)
 #  define BITPACK_FORCEINLINE __attribute__((always_inline))
 #else
 #  define BITPACK_FORCEINLINE
 #endif
 
 #ifndef BITPACK_ASSERT
+#  include <assert.h>
 #  define BITPACK_ASSERT(...) assert(__VA_ARGS__)
 #endif
 #ifndef BITPACK_ENABLE_SLOW_ASSERT
 #  define BITPACK_ENABLE_SLOW_ASSERT false
 #endif
+// When checking if the contract was followed is helpful but disproportionately
+// expensive. Especially useful for code that would otherwise be inlined.
+//
+// Because this library presents some safety + ergonomics over
+// simple bit twiddling operations, most of the functionality should be
+// inlined. So ~BITPACK_SLOW_ASSERT~ is especially important.
 #ifndef BITPACK_SLOW_ASSERT
 #  if BITPACK_ENABLE_SLOW_ASSERT
 #    define BITPACK_SLOW_ASSERT(...) BITPACK_ASSERT(__VA_ARGS__)
 #  else
-#    define BITPACK_SLOW_ASSERT(...)                                           \
-      do {                                                                     \
-      } while(false)
+#    define BITPACK_SLOW_ASSERT(...) [] {}()
 #  endif
 #endif
+
+// I believe I make no assumptions about endianness that effect correctness.
+// However, the code is definitely written assuming little endian
 
 namespace bitpack {
 namespace impl {
 // from Guidelines Support Library
 // isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#gslutil-utilities
 template<class T>
-inline constexpr T
-    narrow_cast(auto const x) noexcept(!BITPACK_ENABLE_SLOW_ASSERT) {
+inline constexpr T narrow(auto const x) //
+    noexcept(!BITPACK_ENABLE_SLOW_ASSERT) {
   T casted = static_cast<T>(x);
   BITPACK_SLOW_ASSERT(static_cast<decltype(x)>(casted) == x);
   return casted;
@@ -74,6 +81,7 @@ template<class UInt, class T>
 inline constexpr auto as_UInt(T const x) noexcept {
   auto const bytes = bytes_of(x);
   UInt acc{};
+  // The inliner should see through this for little endian.
   for(auto i = 0u; i < bytes.size(); ++i) {
     auto const this_byte = to_integer<UInt>(bytes[i]);
     acc |= (this_byte << (i * 8u));
@@ -84,11 +92,12 @@ inline constexpr auto as_UInt(T const x) noexcept {
 /**
  * Unpack the underlying bits in a `UInt` back to `To`
  */
-template<class To, class UInt>
-inline constexpr auto from_UInt(UInt const from) noexcept {
+template<class To, class From>
+inline constexpr auto from_UInt(From const from) noexcept {
   std::array<std::byte, sizeof(To)> bytes;
+  // The inliner should see through this for little endian.
   for(auto i = 0u; i < bytes.size(); ++i)
-    bytes[i] = narrow_cast<std::byte>((from >> (i * 8u)) & 0xFFu);
+    bytes[i] = narrow<std::byte>((from >> (i * 8u)) & 0xFFu);
   return bit_cast<To>(bytes);
 }
 
@@ -115,8 +124,8 @@ class UInt_pair {
   static constexpr auto low_bit_count = low_bit_count_;
   static constexpr auto high_bit_count = sizeof(UInt) * 8 - low_bit_count;
   constexpr UInt_pair() = default;
-  explicit constexpr UInt_pair(X const x,
-                               Y const y) noexcept(!BITPACK_ENABLE_SLOW_ASSERT)
+  explicit constexpr UInt_pair(X const x, Y const y) //
+      noexcept(!BITPACK_ENABLE_SLOW_ASSERT)
       : x_{impl::as_UInt<UInt>(x)}, y_{impl::as_UInt<UInt>(y)} {
     BITPACK_SLOW_ASSERT(this->x() == x);
     BITPACK_SLOW_ASSERT(this->y() == y);
@@ -165,8 +174,8 @@ class tagged_ptr {
   static constexpr uintptr_t tag_bits =
       std::max<uintptr_t>(tag_bits_, 1); // can't have 0 length bitfields :C
   constexpr tagged_ptr() = default;
-  explicit constexpr tagged_ptr(T* const ptr, Tag const tag) noexcept(
-      !BITPACK_ENABLE_SLOW_ASSERT)
+  explicit constexpr tagged_ptr(T* const ptr, Tag const tag) //
+      noexcept(!BITPACK_ENABLE_SLOW_ASSERT)
       : pair_{impl::bit_cast<uintptr_t>(ptr) >> tag_bits, tag} {
     BITPACK_SLOW_ASSERT(this->tag() == tag);
     BITPACK_SLOW_ASSERT(this->ptr() == ptr);
@@ -219,8 +228,8 @@ struct typelist {
   template<class T, int N>
   static constexpr int find_looper() noexcept {
     if constexpr(N >= size) return N;
-    // separate case to prevent istantiation with big N. The user gets our
-    // error instead of std::tuple's
+    // separate case to prevent instantiating is_T_nth with big N. The user gets
+    // our error instead of std::tuple's
     else if(is_T_nth<T, N>)
       return N;
     else
@@ -265,27 +274,27 @@ class variant_ptr {
   }
 
   template<Tag N>
-  constexpr friend auto
-      get(variant_ptr const self) noexcept(!BITPACK_ENABLE_SLOW_ASSERT) {
+  constexpr friend auto get(variant_ptr const self) //
+      noexcept(!BITPACK_ENABLE_SLOW_ASSERT) {
     static_assert(0 <= N && N < size, "Variant index out of bounds");
     using T = typename types::template nth<N>;
     return get<T>(self);
   }
   template<class T>
-  constexpr friend auto
-      get(variant_ptr const self) noexcept(!BITPACK_ENABLE_SLOW_ASSERT) {
+  constexpr friend auto get(variant_ptr const self) //
+      noexcept(!BITPACK_ENABLE_SLOW_ASSERT) {
     static_assert(types::template has<T>, "That type is not in this variant");
     BITPACK_SLOW_ASSERT(holds_alternative<T>(self));
     return static_cast<impl::ensure_pointer_t<T>>(void_star(self));
   }
   template<int N>
-  constexpr friend auto
-      get_if(variant_ptr const self) noexcept(!BITPACK_ENABLE_SLOW_ASSERT) {
+  constexpr friend auto get_if(variant_ptr const self) //
+      noexcept(!BITPACK_ENABLE_SLOW_ASSERT) {
     return (self.index() == N) ? get<N>(self) : nullptr;
   }
   template<class T>
-  constexpr friend auto
-      get_if(variant_ptr const self) noexcept(!BITPACK_ENABLE_SLOW_ASSERT) {
+  constexpr friend auto get_if(variant_ptr const self) //
+      noexcept(!BITPACK_ENABLE_SLOW_ASSERT) {
     return get_if<types::template find<T>>(self);
   }
 

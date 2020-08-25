@@ -17,17 +17,3 @@ target_include_directories(bitpack
   include)
 
 target_compile_features(bitpack INTERFACE cxx_std_20)
-
-# install(TARGETS bitpack EXPORT bitpack_targets)
-# install(EXPORT bitpack_targets
-#   FILE bitpack_targets.cmake
-#   NAMESPACE bitpack::bitpack
-#   # should this be set in stone?
-#   DESTINATION lib/cmake/bitpack)
-
-# include(CMakePackageConfigHelpers)
-# write_basic_package_version_file("bitpackConfigVersion.cmake"
-#   VERSION ${bitpack_version}
-#   COMPATIBILITY SameMajorVersion)
-# install(FILES "bitpackConfig.cmake" "bitpackConfigVersion.cmake"
-#   DESTINATION lib/cmake/bitpack)
