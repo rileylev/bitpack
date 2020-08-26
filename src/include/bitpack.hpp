@@ -21,8 +21,8 @@
 #ifndef BITPACK_ENABLE_SLOW_ASSERT
 #  define BITPACK_ENABLE_SLOW_ASSERT false
 #endif
-// When checking if the contract was followed is helpful but disproportionately
-// expensive. Especially useful for code that would otherwise be inlined.
+// This check is for assertions that are useful but disproportionately
+// expensive, particularly for code that would otherwise be inlined.
 //
 // Because this library presents some safety + ergonomics over
 // simple bit twiddling operations, most of the functionality should be
@@ -317,7 +317,8 @@ class variant_ptr {
   }
 
   template<auto N, class Func>
-  friend auto BITPACK_FORCEINLINE // help the compiler convert it to a switch?
+  BITPACK_FORCEINLINE // help the compiler convert it to a switch?
+      friend auto
       visit_nth(variant_ptr const self, Func visitor, Tag const tag) {
     if constexpr(N >= size) {
       BITPACK_ASSERT(N < size); // should this be changed to SLOW_ASSERT?
