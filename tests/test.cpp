@@ -3,6 +3,8 @@
 #include <string>
 #include <exception>
 
+// I think exceptions gave me clearer catch2 error messages compared to assert.h
+// This also lets us test assertions are actually fired
 struct assert_exception : std::exception {
   std::string message;
   assert_exception(std::string file, int line)
@@ -46,8 +48,8 @@ TEST_CASE("A tagged_ptr will address the same location regardless of tag") {
   REQUIRE(p.get() == &x);
 }
 
-TEST_CASE("variant_ptr can be constructed implicitly from any of its specified "
-          "types.") {
+TEST_CASE("variant_ptr can be constructed implicitly from specified types with "
+          "sufficiently large alignment") {
   using test_variant = variant_ptr<int*, float*, std::string*>;
   SECTION("int*") {
     int x = 32;
@@ -125,7 +127,7 @@ TEST_CASE(
     REQUIRE(visit(p, visitor) == "long"s);
   }
   SECTION("A variant with four elements") {
-    variant_ptr<int*, float*, long*,std::string*> p;
+    variant_ptr<int*, float*, long*, std::string*> p;
 
     int x = 3;
     p = &x;
@@ -139,14 +141,15 @@ TEST_CASE(
     p = &z;
     REQUIRE(visit(p, visitor) == "long"s);
 
-    std::string  s = "hello";
+    std::string s = "hello";
     p = &s;
-    REQUIRE(visit(p,visitor)=="string"s);
+    REQUIRE(visit(p, visitor) == "string"s);
   }
 }
 
-TEST_CASE("variant_ptr gracefully asserts if the pointer gets clobbered "
-          "because alignment is too small") {
+TEST_CASE(
+    "variant_ptr SLOW_ASSERTS during creation if the pointer gets clobbered "
+    "because alignment is too small") {
   // at least one of these will have bad alignment
   char x = 'a';
   char y = 'b';

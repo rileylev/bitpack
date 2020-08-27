@@ -11,11 +11,13 @@ set(CMAKE_FIND_PACKAGE_PREFER_CONFIG TRUE)
 
 include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
 
-enable_testing()
-
-
 add_subdirectory(src)
+
+enable_testing()
 add_subdirectory(tests)
+
+find_program(CLANGTIDY clang-tidy)
+set(CMAKE_CXX_CLANG_TIDY ${CLANGTIDY} -extra-arg=-Wno-unknown-warning-option)
 
 add_compile_options(tester PRIVATE
   -fsanitize=address

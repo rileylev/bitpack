@@ -8,27 +8,15 @@ project(bitpack_test)
 
 add_executable(tester test.cpp)
 add_test(NAME bitpack.test COMMAND tester )
-find_package(Catch2)
+find_package(Catch2 REQUIRED)
 
 set(CMAKE_BUILD_TYPE Debug)
-
-add_compile_options(tester PRIVATE
-  -fsanitize=address
-  -Werror
-  -Wall
-  -Wextra
-  -Wshadow
-  -Wnon-virtual-dtor
-  -Wold-style-cast
-  -Wunused
-  -Wpedantic
-  -Wconversion
-  -Wsign-conversion
-  -Wnull-dereference
-  -Wdouble-promotion
-  )
 
 target_link_libraries(tester
   PRIVATE
   bitpack::bitpack
   Catch2::Catch2)
+
+include(CTest)
+include(Catch)
+catch_discover_tests(tester)
