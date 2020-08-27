@@ -269,37 +269,37 @@ class variant_ptr {
       : ptr_{ptr, types::template find<T>} {}
 
   template<class Func>
-  constexpr friend auto visit(variant_ptr const self, Func visitor) {
+  friend constexpr auto visit(variant_ptr const self, Func visitor) {
     return visit_nth<0>(self, visitor, self.index());
   }
 
   template<Tag N>
-  constexpr friend auto get(variant_ptr const self) //
+  static constexpr auto get(variant_ptr const self) //
       noexcept(!BITPACK_ENABLE_SLOW_ASSERT) {
     static_assert(0 <= N && N < size, "Variant index out of bounds");
     using T = typename types::template nth<N>;
     return get<T>(self);
   }
   template<class T>
-  constexpr friend auto get(variant_ptr const self) //
+  static constexpr auto get(variant_ptr const self) //
       noexcept(!BITPACK_ENABLE_SLOW_ASSERT) {
     static_assert(types::template has<T>, "That type is not in this variant");
     BITPACK_SLOW_ASSERT(holds_alternative<T>(self));
     return static_cast<impl::ensure_pointer_t<T>>(void_star(self));
   }
   template<int N>
-  constexpr friend auto get_if(variant_ptr const self) //
+  static constexpr auto get_if(variant_ptr const self) //
       noexcept(!BITPACK_ENABLE_SLOW_ASSERT) {
     return (self.index() == N) ? get<N>(self) : nullptr;
   }
   template<class T>
-  constexpr friend auto get_if(variant_ptr const self) //
+  static constexpr auto get_if(variant_ptr const self) //
       noexcept(!BITPACK_ENABLE_SLOW_ASSERT) {
     return get_if<types::template find<T>>(self);
   }
 
   template<class T>
-  constexpr friend bool holds_alternative(variant_ptr const self) noexcept {
+  static constexpr bool holds_alternative(variant_ptr const self) noexcept {
     return self.index() == types::template find<T>;
   }
 
@@ -312,13 +312,13 @@ class variant_ptr {
   constexpr operator bool() { return *this == nullptr; }
 
  private:
-  constexpr friend void* void_star(variant_ptr const self) noexcept {
+  static constexpr void* void_star(variant_ptr const self) noexcept {
     return self.ptr_.get();
   }
 
   template<auto N, class Func>
   BITPACK_FORCEINLINE // help the compiler convert it to a switch?
-      friend auto
+      static auto
       visit_nth(variant_ptr const self, Func visitor, Tag const tag) {
     if constexpr(N >= size) {
       BITPACK_ASSERT(N < size); // should this be changed to SLOW_ASSERT?
@@ -334,8 +334,24 @@ class variant_ptr {
   tagged_ptr<void, Tag, tag_bits> ptr_;
 };
 
+// workaround beacuse template hidden frineds weren't working in gcc. it's
+// easier to just maket hem static and then wrap that with a free function
+#define BITPACK_CONDITIONAL_NOEXCEPT_WRAP(...)                                 \
+  noexcept(noexcept(__VA_ARGS__)) { return __VA_ARGS__; }
+#define BITPACK_WRAP_STATIC(template_type, name)                               \
+  template<template_type X>                                                    \
+  constexpr auto name(auto self) BITPACK_CONDITIONAL_NOEXCEPT_WRAP(            \
+      decltype(self)::template name<X>(self))
+
+BITPACK_WRAP_STATIC(class, get)
+BITPACK_WRAP_STATIC(auto, get)
+BITPACK_WRAP_STATIC(class, get_if)
+BITPACK_WRAP_STATIC(auto, get_if)
+BITPACK_WRAP_STATIC(class, holds_alternative)
 // possible future direction: derived_variant_ptr. Put the rtti into the
 // pointers
-} // namespace bitpack
+#undef BITPACK_CONDITIONAL_NOEXCEPT_WRAP
+#undef BITPACK_WRAP_STATIC
 
+} // namespace bitpack
 #endif // BITPACK_INCLUDE_GUARD
