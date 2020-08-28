@@ -14,7 +14,6 @@ struct assert_exception : std::exception {
 
 #define BITPACK_ASSERT(...)                                                    \
   if(!(__VA_ARGS__)) (throw assert_exception(__FILE__, __LINE__));
-#define BITPACK_ENABLE_SLOW_ASSERT true
 #include "bitpack.hpp"
 
 #include <catch2/catch.hpp>

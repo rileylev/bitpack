@@ -14,39 +14,42 @@
 #  define BITPACK_FORCEINLINE
 #endif
 
-#ifndef BITPACK_ASSERT
-#  include <assert.h>
-#  define BITPACK_ASSERT(...) assert(__VA_ARGS__)
-#endif
-#ifndef BITPACK_ENABLE_SLOW_ASSERT
-#  define BITPACK_ENABLE_SLOW_ASSERT false
-#endif
-// This check is for assertions that are useful but disproportionately
-// expensive, particularly for code that would otherwise be inlined.
-//
-// Because this library presents some safety + ergonomics over
-// simple bit twiddling operations, most of the functionality should be
-// inlined. So ~BITPACK_SLOW_ASSERT~ is especially important.
-#ifndef BITPACK_SLOW_ASSERT
-#  if BITPACK_ENABLE_SLOW_ASSERT
-#    define BITPACK_SLOW_ASSERT(...) BITPACK_ASSERT(__VA_ARGS__)
+#if defined(BITPACK_ASSERT)
+#  define BITPACK_ENABLE_ASSERT true
+#else
+#  if !defined(BITPACK_ENABLE_ASSERT)
+#    define BITPACK_ENABLE_ASSERT false
+#  endif
+#  if BITPACK_ENABLE_ASSERT
+#    include <assert.h>
+#    define BITPACK_ASSERT(...) assert(__VA_ARGS__)
 #  else
-#    define BITPACK_SLOW_ASSERT(...) [] {}()
+#    define BITPACK_ASSERT(...) [] {}()
 #  endif
 #endif
+
+#define BITPACK_NOEXCEPT_WRAP(...)                                             \
+  noexcept(noexcept(__VA_ARGS__)) { return __VA_ARGS__; }
 
 // I believe I make no assumptions about endianness that effect correctness.
 // However, the code is definitely written assuming little endian
 
 namespace bitpack {
 namespace impl {
+bool constexpr is_assert_off = !BITPACK_ENABLE_ASSERT;
+
+template<class T>
+constexpr auto dependent_identity(auto x) noexcept {
+  return x;
+}
+
 // from Guidelines Support Library
 // isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#gslutil-utilities
 template<class T>
 inline constexpr T narrow(auto const x) //
-    noexcept(!BITPACK_ENABLE_SLOW_ASSERT) {
+    noexcept(impl::is_assert_off) {
   T casted = static_cast<T>(x);
-  BITPACK_SLOW_ASSERT(static_cast<decltype(x)>(casted) == x);
+  BITPACK_ASSERT(static_cast<decltype(x)>(casted) == x);
   return casted;
 }
 
@@ -127,11 +130,11 @@ class UInt_pair {
   static constexpr auto high_bit_count = sizeof(UInt) * 8 - low_bit_count;
   constexpr UInt_pair() = default;
   explicit constexpr UInt_pair(X const x, Y const y) //
-      noexcept(!BITPACK_ENABLE_SLOW_ASSERT)
+      noexcept(impl::is_assert_off)
       : x_{impl::as_UInt<UInt>(x)}, y_{impl::as_UInt<UInt>(y)} {
     // postcondition
-    BITPACK_SLOW_ASSERT(this->x() == x);
-    BITPACK_SLOW_ASSERT(this->y() == y);
+    BITPACK_ASSERT(this->x() == x);
+    BITPACK_ASSERT(this->y() == y);
   }
 
   constexpr X x() const noexcept { return impl::from_UInt<X>(x_); }
@@ -178,10 +181,10 @@ class tagged_ptr {
       std::max<uintptr_t>(tag_bits_, 1); // can't have 0 length bitfields :C
   constexpr tagged_ptr() = default;
   explicit constexpr tagged_ptr(T* const ptr, Tag const tag) //
-      noexcept(!BITPACK_ENABLE_SLOW_ASSERT)
+      noexcept(impl::is_assert_off)
       : pair_{impl::bit_cast<uintptr_t>(ptr) >> tag_bits, tag} {
-    BITPACK_SLOW_ASSERT(this->tag() == tag);
-    BITPACK_SLOW_ASSERT(this->ptr() == ptr);
+    BITPACK_ASSERT(this->tag() == tag);
+    BITPACK_ASSERT(this->ptr() == ptr);
   }
   constexpr T* ptr() const noexcept {
     return impl::bit_cast<T*>((pair_.x() << tag_bits) | ptr_replacement_bits);
@@ -252,6 +255,17 @@ struct typelist {
     return unguarded_find<T>;
   }();
 };
+
+template<class variant_ptr, class func, class seq>
+struct is_visit_noexcept_by_seq;
+
+template<class variant_ptr, class func, auto... i>
+struct is_visit_noexcept_by_seq<variant_ptr, func, std::index_sequence<i...>> {
+  static constexpr bool value =
+      impl::is_assert_off
+      && (noexcept(std::declval<func>()(get<i>(std::declval<variant_ptr>())))
+          && ...);
+};
 } // namespace impl
 
 template<class... Ts>
@@ -268,37 +282,31 @@ class variant_ptr {
   template<class T>
   explicit(alignof(T) < tag_bits) // If the alignment is small, YOU have to
                                   // guarantee the pointer's low bits are empty
-      constexpr variant_ptr(T* ptr) noexcept(!BITPACK_ENABLE_SLOW_ASSERT)
+      constexpr variant_ptr(T* ptr) noexcept(impl::is_assert_off)
       : ptr_{ptr, types::template find<T>} {}
-
-  // change to static for consistency?
-  template<class Func>
-  friend constexpr auto visit(variant_ptr const self, Func visitor) {
-    return visit_nth<0>(self, visitor, self.index());
-  }
 
   template<Tag N>
   static constexpr auto get(variant_ptr const self) //
-      noexcept(!BITPACK_ENABLE_SLOW_ASSERT) {
+      noexcept(impl::is_assert_off) {
     static_assert(0 <= N && N < size, "The variant index is out of bounds");
     using T = typename types::template nth<N>;
     return get<T>(self);
   }
   template<class T>
   static constexpr auto get(variant_ptr const self) //
-      noexcept(!BITPACK_ENABLE_SLOW_ASSERT) {
+      noexcept(impl::is_assert_off) {
     static_assert(types::template has<T>, "That type is not in this variant");
-    BITPACK_SLOW_ASSERT(holds_alternative<T>(self));
+    BITPACK_ASSERT(holds_alternative<T>(self));
     return static_cast<impl::ensure_pointer_t<T>>(void_star(self));
   }
   template<int N>
   static constexpr auto get_if(variant_ptr const self) //
-      noexcept(!BITPACK_ENABLE_SLOW_ASSERT) {
+      noexcept(impl::is_assert_off) {
     return (self.index() == N) ? get<N>(self) : nullptr;
   }
   template<class T>
   static constexpr auto get_if(variant_ptr const self) //
-      noexcept(!BITPACK_ENABLE_SLOW_ASSERT) {
+      noexcept(impl::is_assert_off) {
     return get_if<types::template find<T>>(self);
   }
 
@@ -320,12 +328,19 @@ class variant_ptr {
     return self.ptr_.get();
   }
 
+  template<class Func, auto N>
+  static constexpr bool is_visit_noexcept =
+      impl::is_visit_noexcept_by_seq<variant_ptr,
+                                     Func,
+                                     std::make_index_sequence<N>>::value;
+
   template<auto N, class Func>
   BITPACK_FORCEINLINE // help the compiler convert it to a switch?
       static auto
-      visit_nth(variant_ptr const self, Func visitor, Tag const tag) {
+      visit_nth(variant_ptr const self, Func visitor, Tag const tag) //
+      noexcept(is_visit_noexcept<Func, size>) {
     if constexpr(N >= size) {
-      BITPACK_ASSERT(N < size); // should this be changed to SLOW_ASSERT? No
+      BITPACK_ASSERT(N < size);
       // just need the type. This is out of contract
       // conjure up a null deref in case we don't have a default constructor
       return *static_cast<decltype(visitor(get<0>(self)))*>(nullptr);
@@ -336,17 +351,23 @@ class variant_ptr {
         return visit_nth<N + 1>(self, visitor, tag);
     }
   }
+
   tagged_ptr<void, Tag, tag_bits> ptr_;
+
+ public:
+  template<class Func>
+  friend constexpr auto visit(variant_ptr const self, Func visitor) noexcept(
+      is_visit_noexcept<Func, size>) {
+    return visit_nth<0>(self, visitor, self.index());
+  }
 };
 
 // workaround beacuse template hidden frineds weren't working in gcc. it's
 // easier to just make them static and then wrap that with a free function
-#define BITPACK_CONDITIONAL_NOEXCEPT_WRAP(...)                                 \
-  noexcept(noexcept(__VA_ARGS__)) { return __VA_ARGS__; }
 #define BITPACK_WRAP_STATIC(template_type, name)                               \
   template<template_type X>                                                    \
-  inline constexpr auto name(auto self) BITPACK_CONDITIONAL_NOEXCEPT_WRAP(     \
-      decltype(self)::template name<X>(self))
+  inline constexpr auto name(auto const self)                                  \
+      BITPACK_NOEXCEPT_WRAP(decltype(self)::template name<X>(self))
 
 BITPACK_WRAP_STATIC(class, get)
 BITPACK_WRAP_STATIC(auto, get)
@@ -354,11 +375,11 @@ BITPACK_WRAP_STATIC(class, get_if)
 BITPACK_WRAP_STATIC(auto, get_if)
 BITPACK_WRAP_STATIC(class, holds_alternative)
 
-//niebloids?
+// niebloids?
 
 // possible future direction: derived_variant_ptr. Put the rtti into the
 // pointers
-#undef BITPACK_CONDITIONAL_NOEXCEPT_WRAP
+#undef BITPACK_NOEXCEPT_WRAP
 #undef BITPACK_WRAP_STATIC
 
 } // namespace bitpack
