@@ -95,7 +95,7 @@ inline constexpr auto as_UInt(T const x) noexcept {
 template<class To, class From>
 inline constexpr auto from_UInt(From const from) noexcept {
   std::array<std::byte, sizeof(To)> bytes;
-  // The inliner should see through this for little endian.
+  // The inliner should see through this for little endian?
   for(auto i = 0u; i < bytes.size(); ++i)
     bytes[i] = narrow<std::byte>((from >> (i * 8u)) & 0xFFu);
   return bit_cast<To>(bytes);
@@ -117,6 +117,8 @@ inline constexpr auto from_uintptr_t(uintptr_t const x) noexcept {
  */
 template<class X, class Y, class UInt, int low_bit_count_ = sizeof(Y) * 8>
 class UInt_pair {
+  // I have to think about this limitation more
+  // is making a small encoding class the right way to put "big" types in here?
   static_assert(sizeof(X) <= sizeof(UInt));
   static_assert(sizeof(Y) <= sizeof(UInt));
 
@@ -127,6 +129,7 @@ class UInt_pair {
   explicit constexpr UInt_pair(X const x, Y const y) //
       noexcept(!BITPACK_ENABLE_SLOW_ASSERT)
       : x_{impl::as_UInt<UInt>(x)}, y_{impl::as_UInt<UInt>(y)} {
+    // postcondition
     BITPACK_SLOW_ASSERT(this->x() == x);
     BITPACK_SLOW_ASSERT(this->y() == y);
   }
@@ -135,7 +138,7 @@ class UInt_pair {
   constexpr Y y() const noexcept { return impl::from_UInt<Y>(y_); }
 
   template<int i>
-  friend constexpr auto get(UInt_pair const pair) noexcept {
+  static constexpr auto get(UInt_pair const pair) noexcept {
     static_assert(i == 0 || i == 1);
     if constexpr(i == 0)
       return pair.x();
@@ -268,6 +271,7 @@ class variant_ptr {
       constexpr variant_ptr(T* ptr) noexcept(!BITPACK_ENABLE_SLOW_ASSERT)
       : ptr_{ptr, types::template find<T>} {}
 
+  // change to static for consistency?
   template<class Func>
   friend constexpr auto visit(variant_ptr const self, Func visitor) {
     return visit_nth<0>(self, visitor, self.index());
@@ -276,7 +280,7 @@ class variant_ptr {
   template<Tag N>
   static constexpr auto get(variant_ptr const self) //
       noexcept(!BITPACK_ENABLE_SLOW_ASSERT) {
-    static_assert(0 <= N && N < size, "Variant index out of bounds");
+    static_assert(0 <= N && N < size, "The variant index is out of bounds");
     using T = typename types::template nth<N>;
     return get<T>(self);
   }
@@ -321,9 +325,10 @@ class variant_ptr {
       static auto
       visit_nth(variant_ptr const self, Func visitor, Tag const tag) {
     if constexpr(N >= size) {
-      BITPACK_ASSERT(N < size); // should this be changed to SLOW_ASSERT?
+      BITPACK_ASSERT(N < size); // should this be changed to SLOW_ASSERT? No
       // just need the type. This is out of contract
-      return decltype(visitor(get<0>(self))){};
+      // conjure up a null deref in case we don't have a default constructor
+      return *static_cast<decltype(visitor(get<0>(self)))*>(nullptr);
     } else {
       if(tag == N)
         return visitor(get<N>(self));
@@ -335,12 +340,12 @@ class variant_ptr {
 };
 
 // workaround beacuse template hidden frineds weren't working in gcc. it's
-// easier to just maket hem static and then wrap that with a free function
+// easier to just make them static and then wrap that with a free function
 #define BITPACK_CONDITIONAL_NOEXCEPT_WRAP(...)                                 \
   noexcept(noexcept(__VA_ARGS__)) { return __VA_ARGS__; }
 #define BITPACK_WRAP_STATIC(template_type, name)                               \
   template<template_type X>                                                    \
-  constexpr auto name(auto self) BITPACK_CONDITIONAL_NOEXCEPT_WRAP(            \
+  inline constexpr auto name(auto self) BITPACK_CONDITIONAL_NOEXCEPT_WRAP(     \
       decltype(self)::template name<X>(self))
 
 BITPACK_WRAP_STATIC(class, get)
@@ -348,6 +353,9 @@ BITPACK_WRAP_STATIC(auto, get)
 BITPACK_WRAP_STATIC(class, get_if)
 BITPACK_WRAP_STATIC(auto, get_if)
 BITPACK_WRAP_STATIC(class, holds_alternative)
+
+//niebloids?
+
 // possible future direction: derived_variant_ptr. Put the rtti into the
 // pointers
 #undef BITPACK_CONDITIONAL_NOEXCEPT_WRAP
