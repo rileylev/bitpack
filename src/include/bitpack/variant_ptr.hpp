@@ -98,12 +98,16 @@ class variant_ptr {
   explicit(alignof(impl::deref_t<T>)
            < tag_bits) // If the alignment is small, YOU have to
                        // guarantee the pointer's low bits are empty
+                       // So we require explicit consent for this responsibility
       constexpr variant_ptr(T ptr) noexcept(impl::is_assert_off)
       : ptr_{ptr, types::template find<T>} {}
 
   explicit constexpr variant_ptr(std::nullptr_t) noexcept
       : variant_ptr(typename types::template nth<0>{nullptr}) {}
 
+  // gcc 10 had a hidden friend template bug so these are static.
+  // workaround.hpp defines free functions in namespace bitpack that forwards to
+  // these. niebloids.hpp defines niebloids that will forward to them too.
   template<Tag N>
   static constexpr auto get(variant_ptr const self) //
       noexcept(impl::is_assert_off) {
