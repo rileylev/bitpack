@@ -9,6 +9,14 @@
 namespace bitpack {
 namespace impl {
 
+template<class T>
+constexpr T garbage_value() noexcept {
+  // if this ever needs to handle a type with no default constructor, I think
+  // this works. But disabling warnings is a pain
+
+  // return *static_cast<T*>(nullptr);
+  return {};
+}
 /**
  * This implements typelists and related functionality as needed for
  * variant_ptr
@@ -55,6 +63,10 @@ struct typelist {
   }();
 };
 
+/**
+ * Use this to check if calling func on any of the types in a typelist can
+ * throw an exception (and if asserts are off)
+ */
 template<class variant_ptr, class func, class seq>
 struct is_visit_noexcept_by_seq;
 
@@ -143,14 +155,14 @@ class variant_ptr {
 
   template<auto N, class Func>
   BITPACK_FORCEINLINE // help the compiler convert it to a switch?
-      static auto
-      visit_nth(variant_ptr const self, Func visitor, Tag const tag) //
+      static decltype(auto)
+          visit_nth(variant_ptr const self, Func visitor, Tag const tag) //
       noexcept(is_visit_noexcept<Func, size>) {
     if constexpr(N >= size) {
       BITPACK_ASSERT(N < size);
       // just need the type. This is out of contract
       // conjure up a null deref in case we don't have a default constructor
-      return *static_cast<decltype(visitor(get<0>(self)))*>(nullptr);
+      return impl::garbage_value<decltype(visitor(get<0>(self)))>();
     } else {
       if(tag == N)
         return visitor(get<N>(self));
@@ -163,9 +175,12 @@ class variant_ptr {
 
  public:
   template<class Func>
-  friend constexpr auto visit(variant_ptr const self, Func visitor) noexcept(
-      is_visit_noexcept<Func, size>) {
-    return visit_nth<0>(self, visitor, self.index());
+  friend constexpr decltype(auto) visit(variant_ptr const self, Func visitor) //
+      noexcept(is_visit_noexcept<Func, size>) {
+    auto const tag = self.index();
+    BITPACK_ASSERT(tag < size);
+    BITPACK_ASSERT(0 <= tag);
+    return visit_nth<0>(self, visitor, tag);
   }
 };
 
