@@ -52,8 +52,11 @@ class UInt_pair {
       return pair.y();
   }
 
-  friend auto operator<=>(const UInt_pair& a, const UInt_pair& b) const {
-    return std::tuple{a.x(), a.y()} <=> std::tuple{b.x(), b.y()};
+  friend auto operator<=>(const UInt_pair& a, const UInt_pair& b) {
+    return std_pair(a) <=> std_pair(b);
+  }
+  friend auto operator==(const UInt_pair& a, const UInt_pair& b) {
+    return std_pair(a) == std_pair(b);
   }
 
  private:
@@ -61,16 +64,20 @@ class UInt_pair {
   UInt x_ : high_bit_count;
 };
 
+template<class X, class Y, class UInt, auto N>
+constexpr auto std_pair(UInt_pair<X, Y, UInt, N> const p) noexcept {
+  return std::pair{p.x(), p.y()};
+}
+
 template<class X, class Y, int low_bit_count = bits::bit_sizeof<Y>>
 using uintptr_pair = UInt_pair<X, Y, uintptr_t, low_bit_count>;
 template<class X, class Y, int low_bit_count = bits::bit_sizeof<Y>>
-auto make_uintptr_pair(X x, Y y) {
-  return uintptr_pair<X, Y, low_bit_count>(x, y);
-}
+constexpr auto make_uintptr_pair(X x, Y y)
+    BITPACK_NOEXCEPT_WRAP(uintptr_pair<X, Y, low_bit_count>(x, y));
 template<int N>
-auto make_uintptr_pair(auto x, auto y) {
-  return make_uintptr_pair<decltype(x), decltype(y), N>(x, y);
-}
+auto make_uintptr_pair(auto x, auto y)
+  BITPACK_NOEXCEPT_WRAP(make_uintptr_pair<decltype(x), decltype(y), N>(x, y));
+
 } // namespace bitpack
 
 #endif // BITPACK_PAIR_INCLUDE_GUARD
