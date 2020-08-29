@@ -1,13 +1,16 @@
 #ifndef BITPACK_BITS_INCLUDE_GUARD
 #define BITPACK_BITS_INCLUDE_GUARD
 
+#include <bitpack/macros.hpp>
+
 #include <array>
 #include <cstring>
 #include <bit>
 
-#include <bitpack/macros.hpp>
-
 namespace bitpack { namespace bits {
+
+template<class T>
+constexpr auto bit_sizeof = sizeof(T) * 8;
 
 // from Guidelines Support Library
 // isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#gslutil-utilities
