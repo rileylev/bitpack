@@ -21,14 +21,14 @@ class UInt_pair {
   constexpr UInt_pair() = default;
   explicit constexpr UInt_pair(X const x, Y const y) //
       noexcept(impl::is_assert_off)
-      : x_{impl::as_UInt<UInt>(x)}, y_{impl::as_UInt<UInt>(y)} {
+      : x_{bits::as_UInt<UInt>(x)}, y_{bits::as_UInt<UInt>(y)} {
     // postcondition
     BITPACK_ASSERT(this->x() == x);
     BITPACK_ASSERT(this->y() == y);
   }
 
-  constexpr X x() const noexcept { return impl::from_UInt<X>(x_); }
-  constexpr Y y() const noexcept { return impl::from_UInt<Y>(y_); }
+  constexpr X x() const noexcept { return bits::from_UInt<X>(x_); }
+  constexpr Y y() const noexcept { return bits::from_UInt<Y>(y_); }
 
   template<int i>
   static constexpr auto get(UInt_pair const pair) noexcept {

@@ -26,12 +26,12 @@ class tagged_ptr {
   constexpr tagged_ptr() = default;
   explicit constexpr tagged_ptr(T* const ptr, Tag const tag) //
       noexcept(impl::is_assert_off)
-      : pair_{impl::bit_cast<uintptr_t>(ptr) >> tag_bits, tag} {
+      : pair_{bits::bit_cast<uintptr_t>(ptr) >> tag_bits, tag} {
     BITPACK_ASSERT(this->tag() == tag);
     BITPACK_ASSERT(this->ptr() == ptr);
   }
   constexpr T* ptr() const noexcept {
-    return impl::bit_cast<T*>((pair_.x() << tag_bits) | ptr_replacement_bits);
+    return bits::bit_cast<T*>((pair_.x() << tag_bits) | ptr_replacement_bits);
   }
   constexpr Tag tag() const noexcept { return pair_.y(); }
   constexpr auto& operator*() const noexcept { return *ptr(); }

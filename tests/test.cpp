@@ -14,14 +14,14 @@ struct assert_exception : std::exception {
 
 #define BITPACK_ASSERT(...)                                                    \
   if(!(__VA_ARGS__)) (throw assert_exception(__FILE__, __LINE__));
-#include "bitpack/bitpack.hpp"
+#include <bitpack/bitpack.hpp>
 
 #include <catch2/catch.hpp>
 
 using namespace bitpack;
 
 TEST_CASE("as_uintptr_t and from_uintptr_t are inverses") {
-  using namespace bitpack::impl;
+  using namespace bitpack::bits;
   auto x = 4;
   auto y = from_uintptr_t<long>(as_uintptr_t(long{x}));
   REQUIRE(y == x);

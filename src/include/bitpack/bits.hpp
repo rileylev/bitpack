@@ -7,8 +7,7 @@
 
 #include <bitpack/macros.hpp>
 
-namespace bitpack{
-namespace impl {
+namespace bitpack { namespace bits {
 
 // from Guidelines Support Library
 // isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#gslutil-utilities
@@ -21,6 +20,7 @@ inline constexpr T narrow(auto const x) //
 }
 
 // polyfill: i don't have std::bit_cast yet
+// unfortunately, this isn't truly constexpr until I get std::bit_cast
 template<class To, class From>
 inline constexpr To bit_cast(From const x) noexcept {
   static_assert(sizeof(To) == sizeof(From));
@@ -80,7 +80,6 @@ inline constexpr auto from_uintptr_t(uintptr_t const x) noexcept {
   return from_UInt<To>(x);
 }
 
-} // namespace impl
-}
+}} // namespace bitpack::bits
 
 #endif
