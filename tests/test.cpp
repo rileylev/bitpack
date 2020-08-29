@@ -54,22 +54,22 @@ TEST_CASE("variant_ptr can be constructed implicitly from specified types with "
     int x = 32;
     test_variant test = &x;
     REQUIRE(test.index() == 0);
-    REQUIRE(get<int>(test) == &x);
-    REQUIRE(get_if<int>(test) == &x);
+    REQUIRE(get<int*>(test) == &x);
+    REQUIRE(get_if<int*>(test) == &x);
   }
   SECTION("float*") {
     float x = 3.14;
     test_variant test = &x;
     REQUIRE(test.index() == 1);
-    REQUIRE(get<float>(test) == &x);
-    REQUIRE(get_if<float>(test) == &x);
+    REQUIRE(get<float*>(test) == &x);
+    REQUIRE(get_if<float*>(test) == &x);
   }
   SECTION("std::string*") {
     std::string x = "hello, world";
     test_variant test = &x;
     REQUIRE(test.index() == 2);
-    REQUIRE(get<std::string>(test) == &x);
-    REQUIRE(get_if<std::string>(test) == &x);
+    REQUIRE(get<std::string*>(test) == &x);
+    REQUIRE(get_if<std::string*>(test) == &x);
   }
 }
 

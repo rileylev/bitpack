@@ -3,6 +3,10 @@
 
 #include <bitpack/pair.hpp>
 
+#include <cstddef>
+#include <bit>
+#include <algorithm>
+
 namespace bitpack{
 
 /**

@@ -13,14 +13,12 @@ namespace impl {
  * This implements typelists and related functionality as needed for
  * variant_ptr
  */
-template<class T>
-using ensure_pointer_t = std::conditional_t<std::is_pointer_v<T>, T, T*>;
 template<class... Ts>
 struct typelist {
  private:
   static_assert((... && !std::is_reference_v<Ts>),
                 "You can't put references in a variant_ptr");
-  using type_tuple = std::tuple<ensure_pointer_t<Ts>...>;
+  using type_tuple = std::tuple<Ts...>;
 
  public:
   static constexpr unsigned size = sizeof...(Ts);
@@ -30,7 +28,7 @@ struct typelist {
 
  private:
   template<class T, int n>
-  static constexpr bool is_T_nth = std::is_same_v<ensure_pointer_t<T>, nth<n>>;
+  static constexpr bool is_T_nth = std::is_same_v<T, nth<n>>;
 
   template<class T, int N>
   static constexpr int find_looper() noexcept {
@@ -67,8 +65,12 @@ struct is_visit_noexcept_by_seq<variant_ptr, func, std::index_sequence<i...>> {
       && (noexcept(std::declval<func>()(get<i>(std::declval<variant_ptr>())))
           && ...);
 };
+
+template<class T>
+using deref_t = decltype(*std::declval<T>());
 } // namespace impl
 
+// for now, we force the Ts to be raw pointers, but they could be something else
 template<class... Ts>
 class variant_ptr {
   using types = impl::typelist<Ts...>;
@@ -81,10 +83,14 @@ class variant_ptr {
 
   constexpr variant_ptr() = default;
   template<class T>
-  explicit(alignof(T) < tag_bits) // If the alignment is small, YOU have to
-                                  // guarantee the pointer's low bits are empty
-      constexpr variant_ptr(T* ptr) noexcept(impl::is_assert_off)
+  explicit(alignof(impl::deref_t<T>)
+           < tag_bits) // If the alignment is small, YOU have to
+                       // guarantee the pointer's low bits are empty
+      constexpr variant_ptr(T ptr) noexcept(impl::is_assert_off)
       : ptr_{ptr, types::template find<T>} {}
+
+  explicit constexpr variant_ptr(std::nullptr_t) noexcept
+      : variant_ptr(typename types::template nth<0>{nullptr}) {}
 
   template<Tag N>
   static constexpr auto get(variant_ptr const self) //
@@ -98,7 +104,7 @@ class variant_ptr {
       noexcept(impl::is_assert_off) {
     static_assert(types::template has<T>, "That type is not in this variant");
     BITPACK_ASSERT(holds_alternative<T>(self));
-    return static_cast<impl::ensure_pointer_t<T>>(void_star(self));
+    return static_cast<T>(void_star(self));
   }
   template<int N>
   static constexpr auto get_if(variant_ptr const self) //
@@ -163,8 +169,10 @@ class variant_ptr {
   }
 };
 
-// possible future direction: derived_variant_ptr. Put the rtti into the
-// pointers
+// possible future directions:
+// - derived_variant_ptr. Put the rtti into a tag
+// - unique_variant?
+// - variant_ptr etc that can hold pointer-like things?
 
 } // namespace bitpack
 
