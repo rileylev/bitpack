@@ -95,10 +95,10 @@ class variant_ptr {
 
   constexpr variant_ptr() = default;
   template<class T>
-  explicit(alignof(impl::deref_t<T>)
-           < tag_bits) // If the alignment is small, YOU have to
-                       // guarantee the pointer's low bits are empty
-                       // So we require explicit consent for this responsibility
+  explicit(alignof(impl::deref_t<T>) <= tag_bits)
+      // If alignment<= number. of tag bits, then inserting it into the variant
+      // risks clobbering meaningful low bits of the address. So we require it
+      // be done explicitly.
       constexpr variant_ptr(T ptr) noexcept(impl::is_assert_off)
       : ptr_{ptr, types::template find<T>} {}
 
