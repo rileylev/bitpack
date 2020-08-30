@@ -20,12 +20,12 @@ struct assert_exception : std::exception {
 #include <catch2/catch.hpp>
 
 using namespace bitpack;
-using namespace bitpack::niebloids;
 
 TEST_CASE("as_uintptr_t and from_uintptr_t are inverses") {
   using namespace bitpack::bits;
   auto x = 4;
-  auto y = from_uintptr_t<long>(as_uintptr_t(long{x}));
+  auto y = from_uintptr_t<long>(
+      as_uintptr_t(from_uintptr_t<long>(as_uintptr_t(long{x}))));
   REQUIRE(y == x);
 }
 
@@ -56,10 +56,17 @@ TEST_CASE("variant_ptr can be constructed implicitly from specified types with "
     int x = 32;
     test_variant test = &x;
     REQUIRE(test.index() == 0);
-    REQUIRE(holds_alternative<int*>(test));
     REQUIRE(get<int*>(test) == &x);
-    REQUIRE(get_t<int*>(test) == &x);
+    REQUIRE(holds_alternative<int*>(test));
     REQUIRE(get_if<int*>(test) == &x);
+  }
+  SECTION("int*, but with niebloids") {
+    int x = 32;
+    test_variant test = &x;
+    REQUIRE(test.index() == 0);
+    REQUIRE(niebloids::get_t<int*>(test) == &x);
+    REQUIRE(niebloids::holds_alternative<int*>(test));
+    REQUIRE(niebloids::get_if_t<int*>(test) == &x);
   }
   SECTION("float*") {
     float x = 3.14;
