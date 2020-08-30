@@ -16,6 +16,12 @@ add_subdirectory(src)
 enable_testing()
 add_subdirectory(tests)
 
+find_program(CCACHE ccache)
+if(CCACHE)
+  message(STATUS "Found ccache")
+  set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE})
+endif()
+
 find_program(CLANGTIDY clang-tidy)
 set(CMAKE_CXX_CLANG_TIDY ${CLANGTIDY} -extra-arg=-Wno-unknown-warning-option)
 
