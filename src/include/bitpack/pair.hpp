@@ -12,11 +12,6 @@ namespace bitpack {
  */
 template<class X, class Y, class UInt, int low_bit_count_ = bits::bit_sizeof<Y>>
 class UInt_pair {
-  // I have to think about this limitation more
-  // is making a small encoding class the right way to put "big" types in here?
-  static_assert(sizeof(X) <= sizeof(UInt));
-  static_assert(sizeof(Y) <= sizeof(UInt));
-
  public:
   static constexpr auto low_bit_count = low_bit_count_;
   static constexpr auto high_bit_count = sizeof(UInt) * 8 - low_bit_count;
@@ -75,7 +70,7 @@ template<class X, class Y, int low_bit_count = bits::bit_sizeof<Y>>
 constexpr auto make_uintptr_pair(X x, Y y)
     BITPACK_NOEXCEPT_WRAP(uintptr_pair<X, Y, low_bit_count>(x, y));
 template<int N>
-auto make_uintptr_pair(auto x, auto y)
+constexpr auto make_uintptr_pair(auto x, auto y)
   BITPACK_NOEXCEPT_WRAP(make_uintptr_pair<decltype(x), decltype(y), N>(x, y));
 
 } // namespace bitpack
