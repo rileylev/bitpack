@@ -15,10 +15,12 @@ struct assert_exception : std::exception {
 #define BITPACK_ASSERT(...)                                                    \
   if(!(__VA_ARGS__)) (throw assert_exception(__FILE__, __LINE__));
 #include <bitpack/bitpack.hpp>
+#include <bitpack/niebloids.hpp>
 
 #include <catch2/catch.hpp>
 
 using namespace bitpack;
+using namespace bitpack::niebloids;
 
 TEST_CASE("as_uintptr_t and from_uintptr_t are inverses") {
   using namespace bitpack::bits;
@@ -54,13 +56,16 @@ TEST_CASE("variant_ptr can be constructed implicitly from specified types with "
     int x = 32;
     test_variant test = &x;
     REQUIRE(test.index() == 0);
+    REQUIRE(holds_alternative<int*>(test));
     REQUIRE(get<int*>(test) == &x);
+    REQUIRE(get_t<int*>(test) == &x);
     REQUIRE(get_if<int*>(test) == &x);
   }
   SECTION("float*") {
     float x = 3.14;
     test_variant test = &x;
     REQUIRE(test.index() == 1);
+    REQUIRE(holds_alternative<float*>(test));
     REQUIRE(get<float*>(test) == &x);
     REQUIRE(get_if<float*>(test) == &x);
   }

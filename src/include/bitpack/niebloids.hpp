@@ -37,7 +37,7 @@ namespace impl {
 using std::visit;
 struct visit_struct {
   template<class... Args>
-  constexpr decltype(auto) operator()(Args&&... args)
+  constexpr decltype(auto) operator()(Args&&... args) const
       BITPACK_NOEXCEPT_WRAP(visit(BITPACK_FWD(args)...));
 };
 } // namespace impl
