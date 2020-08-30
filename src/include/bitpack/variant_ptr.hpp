@@ -122,16 +122,6 @@ class variant_ptr {
     BITPACK_ASSERT(holds_alternative<T>(self));
     return static_cast<T>(void_star(self));
   }
-  template<int N>
-  static constexpr auto get_if(variant_ptr const self) //
-      noexcept(impl::is_assert_off) {
-    return (self.index() == N) ? get<N>(self) : nullptr;
-  }
-  template<class T>
-  static constexpr auto get_if(variant_ptr const self) //
-      noexcept(impl::is_assert_off) {
-    return get_if<types::template find<T>>(self);
-  }
 
   template<class T>
   static constexpr bool holds_alternative(variant_ptr const self) noexcept {

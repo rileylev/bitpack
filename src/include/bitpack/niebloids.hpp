@@ -29,8 +29,6 @@ namespace niebloids {
 // t = by type, n = by index
 BITPACK_NIEBLOID(class, get_t, get)
 BITPACK_NIEBLOID(auto, get_n, get)
-BITPACK_NIEBLOID(class, get_if_t, get_if)
-BITPACK_NIEBLOID(auto, get_if_n, get_if)
 BITPACK_NIEBLOID(class, holds_alternative, holds_alternative)
 
 namespace impl {

@@ -12,8 +12,6 @@
 namespace bitpack {
 BITPACK_WRAP_STATIC(class, get)
 BITPACK_WRAP_STATIC(auto, get)
-BITPACK_WRAP_STATIC(class, get_if)
-BITPACK_WRAP_STATIC(auto, get_if)
 BITPACK_WRAP_STATIC(class, holds_alternative)
 } // namespace bitpack
 
