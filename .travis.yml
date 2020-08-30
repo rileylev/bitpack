@@ -20,8 +20,6 @@ jobs:
             - gcc-10
             - g++-10
 
-      after_script:
-        - bash <(curl -s https://codecov.io/bash) -x /usr/bin/gcov-${GCC_VER}
     - os: linux
       dist: focal
       compiler: clang
