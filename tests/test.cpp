@@ -19,150 +19,140 @@ struct assert_exception : std::exception {
 
 #include <catch2/catch.hpp>
 
-using namespace bitpack;
-
-TEST_CASE("as_uintptr_t and from_uintptr_t are inverses") {
-  using namespace bitpack::bits;
-  auto x = 4;
-  auto y = from_uintptr_t<long>(
-      as_uintptr_t(from_uintptr_t<long>(as_uintptr_t(long{x}))));
-  REQUIRE(y == x);
+// pair
+TEST_CASE("A UInt_pair<X,Y,T>'s size and alignment match those of T") {
+  STATIC_REQUIRE(sizeof(bitpack::UInt_pair<int, int, uintptr_t>)
+                 == sizeof(uintptr_t));
+  STATIC_REQUIRE(alignof(bitpack::UInt_pair<int, int, uintptr_t>)
+                 == alignof(uintptr_t));
+  STATIC_REQUIRE(sizeof(bitpack::UInt_pair<char, char, unsigned char,2>)
+                 == sizeof(unsigned char));
+  STATIC_REQUIRE(alignof(bitpack::UInt_pair<char, char, unsigned char,2>)
+                 == alignof(unsigned char));
+  STATIC_REQUIRE(sizeof(bitpack::UInt_pair<char, char, unsigned int,2>)
+                 == sizeof(unsigned int));
+  STATIC_REQUIRE(alignof(bitpack::UInt_pair<char, char, unsigned int,2>)
+                 == alignof(unsigned int));
 }
 
-TEST_CASE("A uintptr_pair stores its elements within a single uintptr_t") {
-  auto p = make_uintptr_pair(1, 3);
-  REQUIRE(p.x() == 1);
-  REQUIRE(p.y() == 3);
-  REQUIRE(sizeof(p) == sizeof(uintptr_t));
+TEST_CASE("A uintptr_pair's elements are accessed in the same order as "
+          "construction") {
+  auto const elt0 = 32;
+  auto const elt1 = 'c';
+  auto const pair = bitpack::make_uintptr_pair(elt0, elt1);
+  REQUIRE(get<0>(pair) == elt0);
+  REQUIRE(get<1>(pair) == elt1);
 }
 
-TEST_CASE("A uintptr_pair's construction asserts when input is too big"
-          "(if slow_asserts are enabled).") {
-  CHECK_THROWS(make_uintptr_pair<1>(1, 4));
-  CHECK_THROWS(uintptr_pair<int, int, sizeof(uintptr_t) * 8 - 1>(4, 1));
+TEST_CASE("UInt_pairs are lexicographically compared") {
+  REQUIRE(bitpack::make_uintptr_pair(0, 5) < bitpack::make_uintptr_pair(2, 0));
+  REQUIRE(bitpack::make_uintptr_pair(1, 5) < bitpack::make_uintptr_pair(1, 6));
 }
 
-TEST_CASE("A tagged_ptr will address the same location regardless of tag") {
-  int x = 32;
-  REQUIRE(tagged_ptr<int, bool>::tag_bits == 2);
-  tagged_ptr<int, bool> p{&x, false};
-  REQUIRE(p.get() == &x);
+TEST_CASE("UInt_pair's == is defined by elementwise == ") {
+  REQUIRE(bitpack::make_uintptr_pair(1, 5) == bitpack::make_uintptr_pair(1, 5));
+  REQUIRE(bitpack::make_uintptr_pair(2, 5) != bitpack::make_uintptr_pair(1, 5));
+  REQUIRE(bitpack::make_uintptr_pair(1, 5) != bitpack::make_uintptr_pair(1, 0));
+  REQUIRE(bitpack::make_uintptr_pair(5, 4) != bitpack::make_uintptr_pair(1, 0));
 }
 
-TEST_CASE("variant_ptr can be constructed implicitly from specified types with "
-          "sufficiently large alignment") {
-  using test_variant = variant_ptr<int*, float*, std::string*>;
-  SECTION("int*") {
-    int x = 32;
-    test_variant test = &x;
-    REQUIRE(test.index() == 0);
-    REQUIRE(get<int*>(test) == &x);
-    REQUIRE(holds_alternative<int*>(test));
-    REQUIRE(get_if<int*>(test) == &x);
-  }
-  SECTION("int*, but with niebloids") {
-    int x = 32;
-    test_variant test = &x;
-    REQUIRE(test.index() == 0);
-    REQUIRE(niebloids::get_t<int*>(test) == &x);
-    REQUIRE(niebloids::holds_alternative<int*>(test));
-    REQUIRE(niebloids::get_if_t<int*>(test) == &x);
-  }
-  SECTION("float*") {
-    float x = 3.14;
-    test_variant test = &x;
-    REQUIRE(test.index() == 1);
-    REQUIRE(holds_alternative<float*>(test));
-    REQUIRE(get<float*>(test) == &x);
-    REQUIRE(get_if<float*>(test) == &x);
-  }
-  SECTION("std::string*") {
-    std::string x = "hello, world";
-    test_variant test = &x;
-    REQUIRE(test.index() == 2);
-    REQUIRE(get<std::string*>(test) == &x);
-    REQUIRE(get_if<std::string*>(test) == &x);
-  }
-}
-
-TEST_CASE("get_if returns nullptr when variant_ptr does not contain the "
-          "requested type") {
-  int x = 3;
-  variant_ptr<int*, float*> p = &x;
-  REQUIRE(p.index() == 0);
-  REQUIRE(get_if<1>(p) == nullptr);
-  REQUIRE(get_if<float*>(p) == nullptr);
-}
-
-template<class... Ts>
-struct overload : Ts... {
-  using Ts::operator()...;
-};
-template<class... Ts>
-overload(Ts...) -> overload<Ts...>;
-
+// tagged ptr
 TEST_CASE(
-    "Visit dispatches based on the type currently stored in the variant_ptr") {
-  using namespace std::string_literals;
+    "A tagged_ptr is == to nullptr exactly when the pointer it holds is null") {
+  bitpack::tagged_ptr<int*, int> p{nullptr, 0};
+  REQUIRE(p == nullptr);
+  REQUIRE(nullptr == p);
 
-  auto visitor = overload{[](int*) { return "int"s; },
-                          [](float*) { return "float"s; },
-                          [](long*) { return "long"s; },
-                          [](std::string*) { return "string"s; }};
+  p = bitpack::tagged_ptr<int*,int>{nullptr, 3};
+  REQUIRE(p == nullptr);
+  REQUIRE(nullptr == p);
 
-  SECTION("A variant with two elements") {
-    variant_ptr<int*, float*> p;
+  int x = 5;
+  p = bitpack::tagged_ptr<int*, int>{&x, 0};
+  REQUIRE(p != nullptr);
+  REQUIRE(nullptr != p);
 
-    int x = 3;
-    p = &x;
-    REQUIRE(visit(p, visitor) == "int"s);
-
-    float y = 2.0f;
-    p = &y;
-    REQUIRE(visit(p, visitor) == "float"s);
-  }
-
-  SECTION("A variant with three elements") {
-    variant_ptr<int*, float*, long*> p;
-
-    int x = 3;
-    p = &x;
-    REQUIRE(visit(p, visitor) == "int"s);
-
-    float y = 2.0f;
-    p = &y;
-    REQUIRE(visit(p, visitor) == "float"s);
-
-    long z = 3;
-    p = &z;
-    REQUIRE(visit(p, visitor) == "long"s);
-  }
-  SECTION("A variant with four elements") {
-    variant_ptr<int*, float*, long*, std::string*> p;
-
-    int x = 3;
-    p = &x;
-    REQUIRE(visit(p, visitor) == "int"s);
-
-    float y = 2.0f;
-    p = &y;
-    REQUIRE(visit(p, visitor) == "float"s);
-
-    long z = 3;
-    p = &z;
-    REQUIRE(visit(p, visitor) == "long"s);
-
-    std::string s = "hello";
-    p = &s;
-    REQUIRE(visit(p, visitor) == "string"s);
-  }
+  p = bitpack::tagged_ptr<int*, int>{&x, 3};
+  REQUIRE(p != nullptr);
+  REQUIRE(nullptr != p);
 }
 
-TEST_CASE(
-    "variant_ptr SLOW_ASSERTS during creation if the pointer gets clobbered "
-    "because alignment is too small") {
-  // at least one of these will have bad alignment
-  char x = 'a';
-  char y = 'b';
-  CHECK_THROWS(variant_ptr<char*>(&x), variant_ptr<char*>(&y));
+TEST_CASE("maybe_get returns nullopt if its argument does not hold the given type or index"){
+  int x;
+  std::variant<int*,long*> std_variant = &x;
+  bitpack::variant_ptr<int*,long*> bpk_variant = &x;
+  REQUIRE(bitpack::maybe_get<long*>(std_variant)==std::nullopt);
+  REQUIRE(bitpack::maybe_get<long*>(bpk_variant)==std::nullopt);
+  REQUIRE(bitpack::maybe_get<1>(std_variant)==std::nullopt);
+  REQUIRE(bitpack::maybe_get<1>(bpk_variant)==std::nullopt);
+
+  long y;
+  std_variant = &y;
+  bpk_variant = &y;
+  REQUIRE(bitpack::maybe_get<int*>(std_variant)==std::nullopt);
+  REQUIRE(bitpack::maybe_get<int*>(bpk_variant)==std::nullopt);
+  REQUIRE(bitpack::maybe_get<0>(std_variant)==std::nullopt);
+  REQUIRE(bitpack::maybe_get<0>(bpk_variant)==std::nullopt);
+}
+
+TEST_CASE("maybe_get returns optional of its contents when it does hold that type or index"){
+  int x;
+  std::variant<int*,long*> std_variant = &x;
+  bitpack::variant_ptr<int*,long*> bpk_variant = &x;
+  REQUIRE(bitpack::maybe_get<int*>(std_variant)==&x);
+  REQUIRE(bitpack::maybe_get<int*>(bpk_variant)==&x);
+  REQUIRE(bitpack::maybe_get<0>(std_variant)==&x);
+  REQUIRE(bitpack::maybe_get<0>(bpk_variant)==&x);
+
+  long y;
+  std_variant = &y;
+  bpk_variant = &y;
+  REQUIRE(bitpack::maybe_get<long*>(std_variant)==&y);
+  REQUIRE(bitpack::maybe_get<long*>(bpk_variant)==&y);
+  REQUIRE(bitpack::maybe_get<1>(std_variant)==&y);
+  REQUIRE(bitpack::maybe_get<1>(bpk_variant)==&y);
+}
+
+namespace niebloids = bitpack::niebloids;
+TEST_CASE("Niebloids give == comparable values on bitpack containers and std "
+          "containers") {
+  SECTION("Pairs") {
+    auto const std_pair = std::pair{'a', 2};
+    auto const bpk_pair = bitpack::make_uintptr_pair('a', 2);
+
+    SECTION("get_n") {
+      REQUIRE(niebloids::get_n<0>(std_pair) == niebloids::get_n<0>(bpk_pair));
+      REQUIRE(niebloids::get_n<1>(std_pair) == niebloids::get_n<1>(bpk_pair));
+    }
+    SECTION("get_t") {
+      REQUIRE(niebloids::get_t<char>(std_pair)
+              == niebloids::get_t<char>(bpk_pair));
+      REQUIRE(niebloids::get_t<int>(std_pair)
+              == niebloids::get_t<int>(bpk_pair));
+    }
+  }
+  SECTION("variant") {
+    using BpkVariant = bitpack::variant_ptr<int*, char*, bool*>;
+    using StdVariant = std::variant<int*, char*, bool*>;
+
+    int x = 3;
+    BpkVariant bpk_variant = &x;
+    StdVariant std_variant = &x;
+    SECTION("get_n") {
+      REQUIRE(niebloids::get_n<0>(std_variant)
+              == niebloids::get_n<0>(bpk_variant));
+    }
+    SECTION("get_t") {
+      REQUIRE(niebloids::get_t<int*>(std_variant)
+              == niebloids::get_t<int*>(bpk_variant));
+    }
+    SECTION("holds_alternative") {
+      REQUIRE(niebloids::holds_alternative<int*>(std_variant)
+              == niebloids::holds_alternative<int*>(bpk_variant));
+      REQUIRE(niebloids::holds_alternative<char*>(std_variant)
+              == niebloids::holds_alternative<char*>(bpk_variant));
+      REQUIRE(niebloids::holds_alternative<bool*>(std_variant)
+              == niebloids::holds_alternative<bool*>(bpk_variant));
+    }
+  }
 }

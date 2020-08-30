@@ -12,6 +12,8 @@ namespace bitpack {
  */
 template<class X, class Y, class UInt, int low_bit_count_ = bits::bit_sizeof<Y>>
 class UInt_pair {
+  static_assert(std::is_unsigned_v<UInt>);
+
  public:
   static constexpr auto low_bit_count = low_bit_count_;
   static constexpr auto high_bit_count = sizeof(UInt) * 8 - low_bit_count;
@@ -47,22 +49,31 @@ class UInt_pair {
       return pair.y();
   }
 
-  friend auto operator<=>(const UInt_pair& a, const UInt_pair& b) {
-    return std_pair(a) <=> std_pair(b);
+  friend auto to_std_pair(UInt_pair const self) noexcept {
+    return std::pair(self.x(), self.y());
   }
-  friend auto operator==(const UInt_pair& a, const UInt_pair& b) {
-    return std_pair(a) == std_pair(b);
-  }
+  explicit operator std::pair<X, Y>() const { return to_std_pair(*this); }
 
  private:
   UInt y_ : low_bit_count; // little endian : low = lsb = first(lowest address)
   UInt x_ : high_bit_count;
 };
 
-template<class X, class Y, class UInt, auto N>
-constexpr auto std_pair(UInt_pair<X, Y, UInt, N> const p) noexcept {
-  return std::pair{p.x(), p.y()};
-}
+#define BITPACK_DEF_COMPARE(op)                                                \
+  template<class A0,                                                           \
+           class A1,                                                           \
+           class AUint,                                                        \
+           auto Anum,                                                          \
+           class B0,                                                           \
+           class B1,                                                           \
+           class BUint,                                                        \
+           auto Bnum>                                                          \
+  auto operator op(const UInt_pair<A0, A1, AUint, Anum>& a,                    \
+                   const UInt_pair<B0, B1, BUint, Bnum>& b) {                  \
+    return to_std_pair(a) op to_std_pair(b);                                   \
+  }
+BITPACK_DEF_COMPARE(==)
+BITPACK_DEF_COMPARE(<=>)
 
 template<class X, class Y, int low_bit_count = bits::bit_sizeof<Y>>
 using uintptr_pair = UInt_pair<X, Y, uintptr_t, low_bit_count>;
@@ -71,7 +82,7 @@ constexpr auto make_uintptr_pair(X x, Y y)
     BITPACK_NOEXCEPT_WRAP(uintptr_pair<X, Y, low_bit_count>(x, y));
 template<int N>
 constexpr auto make_uintptr_pair(auto x, auto y)
-  BITPACK_NOEXCEPT_WRAP(make_uintptr_pair<decltype(x), decltype(y), N>(x, y));
+    BITPACK_NOEXCEPT_WRAP(make_uintptr_pair<decltype(x), decltype(y), N>(x, y));
 
 } // namespace bitpack
 

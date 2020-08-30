@@ -1,6 +1,7 @@
 #ifndef BITPACK_VARIANT_PTR_INCLUDE_GUARD
 #define BITPACK_VARIANT_PTR_INCLUDE_GUARD
 
+#include <bitpack/traits.hpp>
 #include <bitpack/tagged_ptr.hpp>
 #include <bitpack/workaround.hpp>
 
@@ -61,6 +62,7 @@ struct typelist {
     static_assert(has<T>, "Type not in variant");
     return unguarded_find<T>;
   }();
+
 };
 
 /**
@@ -78,8 +80,6 @@ struct is_visit_noexcept_by_seq<variant_ptr, func, std::index_sequence<i...>> {
           && ...);
 };
 
-template<class T>
-using deref_t = decltype(*std::declval<T>());
 } // namespace impl
 
 // for now, we force the Ts to be raw pointers, but they could be something else
@@ -95,7 +95,7 @@ class variant_ptr {
 
   constexpr variant_ptr() = default;
   template<class T>
-  explicit(alignof(impl::deref_t<T>) <= tag_bits)
+  explicit(alignof(traits::deref_t<T>) <= tag_bits)
       // If alignment<= number. of tag bits, then inserting it into the variant
       // risks clobbering meaningful low bits of the address. So we require it
       // be done explicitly.
@@ -165,7 +165,7 @@ class variant_ptr {
     }
   }
 
-  tagged_ptr<void, Tag, tag_bits> ptr_;
+  tagged_ptr<void*, Tag, tag_bits> ptr_;
 
  public:
   template<class Func>

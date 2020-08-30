@@ -7,5 +7,6 @@
 #include <bitpack/tagged_ptr.hpp>
 #include <bitpack/variant_ptr.hpp>
 #include <bitpack/niebloids.hpp>
+#include <bitpack/maybe_get.hpp>
 
 #endif // BITPACK_INCLUDE_GUARD
