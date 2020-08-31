@@ -14,8 +14,7 @@ namespace niebloids {
   using std::fn_name;                                                          \
   template<template_type T>                                                    \
   struct struct_name {                                                         \
-    template<class... Args>                                                    \
-    constexpr decltype(auto) operator()(Args&&... args) const                  \
+    constexpr decltype(auto) operator()(auto&&... args) const                  \
         BITPACK_NOEXCEPT_WRAP(fn_name<T>(BITPACK_FWD(args)...));               \
   };                                                                           \
   }                                                                            \
@@ -29,15 +28,12 @@ namespace niebloids {
 // t = by type, n = by index
 BITPACK_NIEBLOID(class, get_t, get)
 BITPACK_NIEBLOID(auto, get_n, get)
-BITPACK_NIEBLOID(class, get_if_t, get_if)
-BITPACK_NIEBLOID(auto, get_if_n, get_if)
 BITPACK_NIEBLOID(class, holds_alternative, holds_alternative)
 
 namespace impl {
 using std::visit;
 struct visit_struct {
-  template<class... Args>
-  constexpr decltype(auto) operator()(Args&&... args)
+  constexpr decltype(auto) operator()(auto&&... args) const
       BITPACK_NOEXCEPT_WRAP(visit(BITPACK_FWD(args)...));
 };
 } // namespace impl

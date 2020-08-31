@@ -1,13 +1,14 @@
 #ifndef BITPACK_TAGGED_PTR_INCLUDE_GUARD
 #define BITPACK_TAGGED_PTR_INCLUDE_GUARD
 
+#include <bitpack/traits.hpp>
 #include <bitpack/pair.hpp>
 
 #include <cstddef>
 #include <bit>
 #include <algorithm>
 
-namespace bitpack{
+namespace bitpack {
 
 /**
  * Holds a pointer(`T*`) and puts a tag(`Tag`) in the low bits(the number
@@ -15,23 +16,23 @@ namespace bitpack{
  * the low bits of the pointer back in. Provide a smart pointer-- like
  * interface to get at the underlying pointer.
  */
-template<class T,
+template<class Ptr,
          class Tag,
-         uintptr_t tag_bits_ = std::bit_width(alignof(T) - 1),
+         uintptr_t tag_bits_ = std::bit_width(alignof(traits::deref_t<Ptr>) - 1),
          uintptr_t ptr_replacement_bits = 0u>
 class tagged_ptr {
  public:
   static constexpr uintptr_t tag_bits =
       std::max<uintptr_t>(tag_bits_, 1); // can't have 0 length bitfields :C
   constexpr tagged_ptr() = default;
-  explicit constexpr tagged_ptr(T* const ptr, Tag const tag) //
+  explicit constexpr tagged_ptr(Ptr const ptr, Tag const tag) //
       noexcept(impl::is_assert_off)
       : pair_{bits::bit_cast<uintptr_t>(ptr) >> tag_bits, tag} {
     BITPACK_ASSERT(this->tag() == tag);
     BITPACK_ASSERT(this->ptr() == ptr);
   }
-  constexpr T* ptr() const noexcept {
-    return bits::bit_cast<T*>((pair_.x() << tag_bits) | ptr_replacement_bits);
+  constexpr Ptr ptr() const noexcept {
+    return bits::bit_cast<Ptr>((pair_.x() << tag_bits) | ptr_replacement_bits);
   }
   constexpr Tag tag() const noexcept { return pair_.y(); }
   constexpr auto& operator*() const noexcept { return *ptr(); }
@@ -49,5 +50,5 @@ class tagged_ptr {
  private:
   uintptr_pair<uintptr_t, Tag, tag_bits> pair_;
 };
-}
+} // namespace bitpack
 #endif // BITPACK_TAGGED_PTR_INCLUDE_GUARD

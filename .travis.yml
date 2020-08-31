@@ -2,6 +2,7 @@ language: cpp
 
 install:
   - pip install --user conan cmake
+cache: ccache
 git:
   depth: 3
 jobs:
