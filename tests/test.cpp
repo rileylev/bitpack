@@ -13,11 +13,16 @@ struct assert_exception : std::exception {
 };
 
 #define BITPACK_ASSERT(...)                                                    \
-  if(!(__VA_ARGS__)) (throw assert_exception(__FILE__, __LINE__));
+  [&]{if(!(__VA_ARGS__)) (throw assert_exception(__FILE__, __LINE__));}()
 #include <bitpack/bitpack.hpp>
 #include <bitpack/niebloids.hpp>
 
 #include <catch2/catch.hpp>
+
+TEST_CASE("The asserts are on"){
+  STATIC_REQUIRE(BITPACK_ENABLE_ASSERT);
+  REQUIRE_THROWS(BITPACK_ASSERT(false));
+}
 
 // pair
 TEST_CASE("A UInt_pair<X,Y,T>'s size and alignment match those of T") {
@@ -25,13 +30,13 @@ TEST_CASE("A UInt_pair<X,Y,T>'s size and alignment match those of T") {
                  == sizeof(uintptr_t));
   STATIC_REQUIRE(alignof(bitpack::UInt_pair<int, int, uintptr_t>)
                  == alignof(uintptr_t));
-  STATIC_REQUIRE(sizeof(bitpack::UInt_pair<char, char, unsigned char,2>)
+  STATIC_REQUIRE(sizeof(bitpack::UInt_pair<char, char, unsigned char, 2>)
                  == sizeof(unsigned char));
-  STATIC_REQUIRE(alignof(bitpack::UInt_pair<char, char, unsigned char,2>)
+  STATIC_REQUIRE(alignof(bitpack::UInt_pair<char, char, unsigned char, 2>)
                  == alignof(unsigned char));
-  STATIC_REQUIRE(sizeof(bitpack::UInt_pair<char, char, unsigned int,2>)
+  STATIC_REQUIRE(sizeof(bitpack::UInt_pair<char, char, unsigned int, 2>)
                  == sizeof(unsigned int));
-  STATIC_REQUIRE(alignof(bitpack::UInt_pair<char, char, unsigned int,2>)
+  STATIC_REQUIRE(alignof(bitpack::UInt_pair<char, char, unsigned int, 2>)
                  == alignof(unsigned int));
 }
 
@@ -63,7 +68,7 @@ TEST_CASE(
   REQUIRE(p == nullptr);
   REQUIRE(nullptr == p);
 
-  p = bitpack::tagged_ptr<int*,int>{nullptr, 3};
+  p = bitpack::tagged_ptr<int*, int>{nullptr, 3};
   REQUIRE(p == nullptr);
   REQUIRE(nullptr == p);
 
@@ -77,41 +82,50 @@ TEST_CASE(
   REQUIRE(nullptr != p);
 }
 
-TEST_CASE("maybe_get returns nullopt if its argument does not hold the given type or index"){
+TEST_CASE("maybe_get returns nullopt if its argument does not hold the given "
+          "type or index") {
   int x;
-  std::variant<int*,long*> std_variant = &x;
-  bitpack::variant_ptr<int*,long*> bpk_variant = &x;
-  REQUIRE(bitpack::maybe_get<long*>(std_variant)==std::nullopt);
-  REQUIRE(bitpack::maybe_get<long*>(bpk_variant)==std::nullopt);
-  REQUIRE(bitpack::maybe_get<1>(std_variant)==std::nullopt);
-  REQUIRE(bitpack::maybe_get<1>(bpk_variant)==std::nullopt);
+  std::variant<int*, long*> std_variant = &x;
+  bitpack::variant_ptr<int*, long*> bpk_variant = &x;
+  REQUIRE(bitpack::maybe_get<long*>(std_variant) == std::nullopt);
+  REQUIRE(bitpack::maybe_get<long*>(bpk_variant) == std::nullopt);
+  REQUIRE(bitpack::maybe_get<1>(std_variant) == std::nullopt);
+  REQUIRE(bitpack::maybe_get<1>(bpk_variant) == std::nullopt);
 
   long y;
   std_variant = &y;
   bpk_variant = &y;
-  REQUIRE(bitpack::maybe_get<int*>(std_variant)==std::nullopt);
-  REQUIRE(bitpack::maybe_get<int*>(bpk_variant)==std::nullopt);
-  REQUIRE(bitpack::maybe_get<0>(std_variant)==std::nullopt);
-  REQUIRE(bitpack::maybe_get<0>(bpk_variant)==std::nullopt);
+  REQUIRE(bitpack::maybe_get<int*>(std_variant) == std::nullopt);
+  REQUIRE(bitpack::maybe_get<int*>(bpk_variant) == std::nullopt);
+  REQUIRE(bitpack::maybe_get<0>(std_variant) == std::nullopt);
+  REQUIRE(bitpack::maybe_get<0>(bpk_variant) == std::nullopt);
 }
 
-TEST_CASE("maybe_get returns optional of its contents when it does hold that type or index"){
+TEST_CASE("maybe_get returns optional of its contents when it does hold that "
+          "type or index") {
   int x;
-  std::variant<int*,long*> std_variant = &x;
-  bitpack::variant_ptr<int*,long*> bpk_variant = &x;
-  REQUIRE(bitpack::maybe_get<int*>(std_variant)==&x);
-  REQUIRE(bitpack::maybe_get<int*>(bpk_variant)==&x);
-  REQUIRE(bitpack::maybe_get<0>(std_variant)==&x);
-  REQUIRE(bitpack::maybe_get<0>(bpk_variant)==&x);
+  std::variant<int*, long*> std_variant = &x;
+  bitpack::variant_ptr<int*, long*> bpk_variant = &x;
+  REQUIRE(bitpack::maybe_get<int*>(std_variant) == &x);
+  REQUIRE(bitpack::maybe_get<int*>(bpk_variant) == &x);
+  REQUIRE(bitpack::maybe_get<0>(std_variant) == &x);
+  REQUIRE(bitpack::maybe_get<0>(bpk_variant) == &x);
 
   long y;
   std_variant = &y;
   bpk_variant = &y;
-  REQUIRE(bitpack::maybe_get<long*>(std_variant)==&y);
-  REQUIRE(bitpack::maybe_get<long*>(bpk_variant)==&y);
-  REQUIRE(bitpack::maybe_get<1>(std_variant)==&y);
-  REQUIRE(bitpack::maybe_get<1>(bpk_variant)==&y);
+  REQUIRE(bitpack::maybe_get<long*>(std_variant) == &y);
+  REQUIRE(bitpack::maybe_get<long*>(bpk_variant) == &y);
+  REQUIRE(bitpack::maybe_get<1>(std_variant) == &y);
+  REQUIRE(bitpack::maybe_get<1>(bpk_variant) == &y);
 }
+
+template<class... Fs>
+struct overload : Fs... {
+  using Fs::operator()...;
+};
+template<class... Fs>
+overload(Fs...) -> overload<Fs...>;
 
 namespace niebloids = bitpack::niebloids;
 TEST_CASE("Niebloids give == comparable values on bitpack containers and std "
@@ -132,8 +146,8 @@ TEST_CASE("Niebloids give == comparable values on bitpack containers and std "
     }
   }
   SECTION("variant") {
-    using BpkVariant = bitpack::variant_ptr<int*, char*, bool*>;
-    using StdVariant = std::variant<int*, char*, bool*>;
+    using BpkVariant = bitpack::variant_ptr<int*, float*, std::string*>;
+    using StdVariant = std::variant<int*, float*, std::string*>;
 
     int x = 3;
     BpkVariant bpk_variant = &x;
@@ -149,10 +163,31 @@ TEST_CASE("Niebloids give == comparable values on bitpack containers and std "
     SECTION("holds_alternative") {
       REQUIRE(niebloids::holds_alternative<int*>(std_variant)
               == niebloids::holds_alternative<int*>(bpk_variant));
-      REQUIRE(niebloids::holds_alternative<char*>(std_variant)
-              == niebloids::holds_alternative<char*>(bpk_variant));
-      REQUIRE(niebloids::holds_alternative<bool*>(std_variant)
-              == niebloids::holds_alternative<bool*>(bpk_variant));
+      REQUIRE(niebloids::holds_alternative<float*>(std_variant)
+              == niebloids::holds_alternative<float*>(bpk_variant));
+      REQUIRE(niebloids::holds_alternative<std::string*>(std_variant)
+              == niebloids::holds_alternative<std::string*>(bpk_variant));
+    }
+    using namespace std::literals;
+    SECTION("visit") {
+      auto const visitor = overload{[](int*) { return "int*"s; },
+                                    [](float*) { return "float*"s; },
+                                    [](std::string*) { return "std::string*"s; }};
+
+      REQUIRE(niebloids::visit(visitor, bpk_variant)
+              == niebloids::visit(visitor, std_variant));
+
+      float y;
+      bpk_variant =&y;
+      std_variant =&y;
+      REQUIRE(niebloids::visit(visitor, bpk_variant)
+              == niebloids::visit(visitor, std_variant));
+
+      std::string z;
+      bpk_variant =&z;
+      std_variant =&z;
+      REQUIRE(niebloids::visit(visitor, bpk_variant)
+              == niebloids::visit(visitor, std_variant));
     }
   }
 }

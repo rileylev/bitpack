@@ -62,7 +62,6 @@ struct typelist {
     static_assert(has<T>, "Type not in variant");
     return unguarded_find<T>;
   }();
-
 };
 
 /**
@@ -169,11 +168,11 @@ class variant_ptr {
 
  public:
   template<class Func>
-  friend constexpr decltype(auto) visit(variant_ptr const self, Func visitor) //
+  friend constexpr decltype(auto) visit(Func visitor, variant_ptr const self) //
       noexcept(is_visit_noexcept<Func, size>) {
     auto const tag = self.index();
-    BITPACK_ASSERT(tag < size);
     BITPACK_ASSERT(0 <= tag);
+    BITPACK_ASSERT(tag < size);
     return visit_nth<0>(self, visitor, tag);
   }
 };

@@ -53,6 +53,15 @@ class UInt_pair {
     return std::pair(self.x(), self.y());
   }
   explicit operator std::pair<X, Y>() const { return to_std_pair(*this); }
+  // explicit because silently converting to std::pair can result in trying to
+  // grab pointers to a temporary (pr value)
+  //
+  // consider the following
+  // get_if has no overload that takes UInt_pair
+  // Imagine we had implicit conversion.
+  // If user mistakenly calls it on UInt_pair, it implicitly converts to
+  // std::pair<X,Y> (a temporary) and then get_if returns a pointer to the value
+  // the temporary held. This is never what the user intended.
 
  private:
   UInt y_ : low_bit_count; // little endian : low = lsb = first(lowest address)
