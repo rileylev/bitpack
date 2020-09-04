@@ -42,7 +42,8 @@ class tagged_ptr {
     return decltype(pair)::y(pair);
   }
   constexpr Tag tag() const noexcept { return tag(*this); }
-  friend constexpr traits::deref_t<Ptr> operator*(tagged_ptr const self) noexcept {
+  friend constexpr traits::deref_t<Ptr>
+      operator*(tagged_ptr const self) noexcept {
     return *ptr(self);
   }
   constexpr Ptr operator->() const noexcept { return ptr(); }

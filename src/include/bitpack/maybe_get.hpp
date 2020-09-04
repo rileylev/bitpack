@@ -9,13 +9,13 @@
 #include <optional>
 namespace bitpack {
 template<class T>
-constexpr auto maybe_get(auto variant)
+constexpr auto maybe_get(auto const variant)
     BITPACK_EXPR_BODY((holds_alternative<T>(variant))
                           ? std::optional{get<T>(variant)}
                           : std::nullopt);
 
 template<auto n>
-constexpr auto maybe_get(auto variant)
+constexpr auto maybe_get(auto const variant)
     BITPACK_EXPR_BODY((variant.index() == n) ? std::optional{get<n>(variant)}
                                              : std::nullopt);
 } // namespace bitpack
