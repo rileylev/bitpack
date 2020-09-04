@@ -42,11 +42,11 @@ class tagged_ptr {
     return decltype(pair)::y(pair);
   }
   constexpr Tag tag() const noexcept { return tag(*this); }
-  friend constexpr auto& operator*(tagged_ptr const self) noexcept {
+  friend constexpr traits::deref_t<Ptr> operator*(tagged_ptr const self) noexcept {
     return *ptr(self);
   }
-  constexpr auto operator->() const noexcept { return ptr(); }
-  constexpr auto get() const noexcept { return ptr(); }
+  constexpr Ptr operator->() const noexcept { return ptr(); }
+  constexpr Ptr get() const noexcept { return ptr(); }
 
   friend constexpr bool operator==(tagged_ptr const p, std::nullptr_t) {
     return p.get() == nullptr;

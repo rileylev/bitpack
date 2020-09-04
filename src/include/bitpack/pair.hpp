@@ -36,7 +36,7 @@ class UInt_pair {
   constexpr Y y() const noexcept { return y(*this); }
 
   template<int i>
-  using nth_t = std::conditional_t<i==0,X,Y>;
+  using nth_t = std::conditional_t<i == 0, X, Y>;
 
   template<int i>
   static constexpr nth_t<i> get(UInt_pair const pair) noexcept {
@@ -58,10 +58,12 @@ class UInt_pair {
       return y(pair);
   }
 
-  friend auto to_std_pair(UInt_pair const self) noexcept {
+  friend std::pair<X, Y> to_std_pair(UInt_pair const self) noexcept {
     return std::pair(x(self), y(self));
   }
-  explicit operator std::pair<X, Y>() const noexcept { return to_std_pair(*this); }
+  explicit operator std::pair<X, Y>() const noexcept {
+    return to_std_pair(*this);
+  }
   // explicit because silently converting to std::pair can result in trying to
   // grab pointers to a temporary (pr value)
   //
