@@ -19,7 +19,7 @@ namespace niebloids {
   };                                                                           \
   }                                                                            \
   template<template_type T>                                                    \
-  constexpr auto name = impl::struct_name<T>{};
+  inline constexpr auto name = impl::struct_name<T>{};
 #define BITPACK_NIEBLOID(template_type, name, fn_name)                         \
   BITPACK_NIEBLOID_(template_type, name, fn_name, name##_struct)
 
@@ -37,7 +37,7 @@ struct visit_struct {
       BITPACK_NOEXCEPT_WRAP(visit(BITPACK_FWD(args)...));
 };
 } // namespace impl
-[[maybe_unused]] constexpr impl::visit_struct visit{};
+[[maybe_unused]] inline  constexpr impl::visit_struct visit{};
 } // namespace niebloids
 } // namespace bitpack
 
