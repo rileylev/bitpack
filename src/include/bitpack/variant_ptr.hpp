@@ -1,6 +1,7 @@
 #ifndef BITPACK_VARIANT_PTR_INCLUDE_GUARD
 #define BITPACK_VARIANT_PTR_INCLUDE_GUARD
 
+#include <bitpack/macros.hpp>
 #include <bitpack/traits.hpp>
 #include <bitpack/tagged_ptr.hpp>
 #include <bitpack/workaround.hpp>
@@ -79,6 +80,15 @@ struct is_visit_noexcept_by_seq<variant_ptr, func, std::index_sequence<i...>> {
           && ...);
 };
 
+template<class variant_ptr, class Func, class seq>
+struct visit_common_type_by_seq;
+
+template<class variant_ptr, class Func, auto... i>
+struct visit_common_type_by_seq<variant_ptr, Func, std::index_sequence<i...>> {
+  using type = std::common_type_t<decltype(
+      std::declval<Func>()(get<i>(std::declval<variant_ptr>())))...>;
+};
+
 } // namespace impl
 
 // for now, we force the Ts to be raw pointers, but they could be something else
@@ -144,17 +154,23 @@ class variant_ptr {
     return self.ptr_.get();
   }
 
-  template<class Func, auto N>
+  template<class Func>
   static constexpr bool is_visit_noexcept =
       impl::is_visit_noexcept_by_seq<variant_ptr,
                                      Func,
-                                     std::make_index_sequence<N>>::value;
+                                     std::make_index_sequence<size>>::value;
 
-  template<auto N, class Func>
+  template<class Func>
+  using visit_common_type = typename impl::visit_common_type_by_seq<
+      variant_ptr,
+      Func,
+      std::make_index_sequence<size>>::type;
+
+  template<class R, auto N, class Func>
   BITPACK_FORCEINLINE // help the compiler convert it to a switch?
-      static decltype(auto)
-          visit_nth(variant_ptr const self, Func visitor, Tag const tag) //
-      noexcept(is_visit_noexcept<Func, size>) {
+      static R
+      visit_nth(variant_ptr const self, Func visitor, Tag const tag) //
+      noexcept(is_visit_noexcept<Func>) {
     if constexpr(N >= size) {
       BITPACK_ASSERT(N < size);
       // just need the type. This is out of contract
@@ -164,21 +180,25 @@ class variant_ptr {
       if(tag == N)
         return visitor(get<N>(self));
       else
-        return visit_nth<N + 1>(self, visitor, tag);
+        return visit_nth<R, N + 1>(self, visitor, tag);
     }
   }
 
   tagged_ptr<void*, Tag, tag_bits> ptr_;
 
  public:
-  template<class Func>
-  friend constexpr decltype(auto) visit(Func visitor, variant_ptr const self) //
-      noexcept(is_visit_noexcept<Func, size>) {
+  template<class R, class Func>
+  static constexpr R visit(Func visitor, variant_ptr const self) //
+      noexcept(is_visit_noexcept<Func>) {
     auto const tag = variant_ptr::index(self);
     BITPACK_ASSERT(0 <= tag);
     BITPACK_ASSERT(tag < size);
-    return visit_nth<0>(self, visitor, tag);
+    return visit_nth<R, 0>(self, visitor, tag);
   }
+
+  template<class Func>
+  static constexpr auto visit(Func visitor, variant_ptr const self)
+      BITPACK_EXPR_BODY(visit<visit_common_type<Func>, Func>(visitor, self))
 };
 
 // possible future directions:

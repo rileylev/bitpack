@@ -27,8 +27,8 @@
 #  endif
 #endif
 
-#define BITPACK_NOEXCEPT_WRAP(...)                                             \
-  noexcept(noexcept(__VA_ARGS__)) { return __VA_ARGS__; }
+#define BITPACK_FWD(x) std::forward<decltype(x)>(x)
+
 #define BITPACK_EXPR_BODY(...)                                                 \
   noexcept(noexcept(__VA_ARGS__))->decltype(__VA_ARGS__) { return __VA_ARGS__; }
 

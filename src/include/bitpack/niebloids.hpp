@@ -6,7 +6,6 @@
 #include <variant>
 
 namespace bitpack {
-#define BITPACK_FWD(x) std::forward<decltype(x)>(x)
 #include <variant>
 namespace niebloids {
 #define BITPACK_NIEBLOID_(template_type, name, fn_name, struct_name)           \
