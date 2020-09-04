@@ -24,6 +24,15 @@ TEST_CASE("The asserts are on"){
   REQUIRE_THROWS(BITPACK_ASSERT(false));
 }
 
+TEST_CASE("from_uintptr and as_uintptr are inverses"){
+  int x =15124;
+  using namespace bitpack::bits;
+  REQUIRE(from_uintptr_t<int>(as_uintptr_t(x))==x);
+
+  uintptr_t y = 1340918;
+  REQUIRE(as_uintptr_t(from_uintptr_t<intptr_t>(y))==y);
+}
+
 // pair
 TEST_CASE("A UInt_pair<X,Y,T>'s size and alignment match those of T") {
   STATIC_REQUIRE(sizeof(bitpack::UInt_pair<int, int, uintptr_t>)
@@ -80,6 +89,19 @@ TEST_CASE(
   p = bitpack::tagged_ptr<int*, int>{&x, 3};
   REQUIRE(p != nullptr);
   REQUIRE(nullptr != p);
+}
+
+TEST_CASE("tagged_ptr supports dereference operators"){
+  SECTION("operator*"){
+  int x = 3;
+  bitpack::tagged_ptr p{&x,0};
+  REQUIRE(*p==3);}
+
+  SECTION("operator->"){
+  struct {int x;} box{2};
+  bitpack::tagged_ptr p{&box,3};
+  REQUIRE(p->x==2);
+  }
 }
 
 TEST_CASE("maybe_get returns nullopt if its argument does not hold the given "

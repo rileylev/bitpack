@@ -31,11 +31,20 @@ class tagged_ptr {
     BITPACK_ASSERT(this->tag() == tag);
     BITPACK_ASSERT(this->ptr() == ptr);
   }
-  constexpr Ptr ptr() const noexcept {
-    return bits::bit_cast<Ptr>((pair_.x() << tag_bits) | ptr_replacement_bits);
+  constexpr static Ptr ptr(tagged_ptr const self) noexcept {
+    auto const pair = self.pair_;
+    return bits::bit_cast<Ptr>((decltype(pair)::x(pair) << tag_bits)
+                               | ptr_replacement_bits);
   }
-  constexpr Tag tag() const noexcept { return pair_.y(); }
-  constexpr auto& operator*() const noexcept { return *ptr(); }
+  constexpr Ptr ptr() const noexcept { return ptr(*this); }
+  constexpr static Tag tag(tagged_ptr const self) noexcept {
+    auto const pair = self.pair_;
+    return decltype(pair)::y(pair);
+  }
+  constexpr Tag tag() const noexcept { return tag(*this); }
+  friend constexpr auto& operator*(tagged_ptr const self) noexcept {
+    return *ptr(self);
+  }
   constexpr auto operator->() const noexcept { return ptr(); }
   constexpr auto get() const noexcept { return ptr(); }
 

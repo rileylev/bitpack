@@ -26,16 +26,22 @@ class UInt_pair {
     BITPACK_ASSERT(this->y() == y);
   }
 
-  constexpr X x() const noexcept { return bits::from_UInt<X>(x_); }
-  constexpr Y y() const noexcept { return bits::from_UInt<Y>(y_); }
+  constexpr static X x(const UInt_pair self) noexcept {
+    return bits::from_UInt<X>(self.x_);
+  }
+  constexpr static Y y(const UInt_pair self) noexcept {
+    return bits::from_UInt<Y>(self.y_);
+  }
+  constexpr X x() const noexcept { return x(*this); }
+  constexpr Y y() const noexcept { return y(*this); }
 
   template<int i>
   static constexpr auto get(UInt_pair const pair) noexcept {
     static_assert(i == 0 || i == 1, "That index is out of bounds.");
     if constexpr(i == 0)
-      return pair.x();
+      return x(pair);
     else if(i == 1)
-      return pair.y();
+      return y(pair);
   }
 
   template<class T>
@@ -44,13 +50,13 @@ class UInt_pair {
     constexpr bool isY = std::is_same_v<T, Y>;
     static_assert(isX || isY, "That is not a type in this pair.");
     if constexpr(isX)
-      return pair.x();
+      return x(pair);
     else if(isY)
-      return pair.y();
+      return y(pair);
   }
 
   friend auto to_std_pair(UInt_pair const self) noexcept {
-    return std::pair(self.x(), self.y());
+    return std::pair(x(self), y(self));
   }
   explicit operator std::pair<X, Y>() const { return to_std_pair(*this); }
   // explicit because silently converting to std::pair can result in trying to

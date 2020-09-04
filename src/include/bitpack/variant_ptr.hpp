@@ -90,7 +90,11 @@ class variant_ptr {
  public:
   static constexpr auto size = types::size;
   using Tag = int;
-  constexpr Tag index() const noexcept { return ptr_.tag(); }
+  static constexpr Tag index(variant_ptr const self) noexcept {
+    auto const ptr = self.ptr_;
+    return decltype(ptr)::tag(ptr);
+  }
+  constexpr Tag index() const noexcept { return decltype(ptr_)::tag(ptr_); }
 
   constexpr variant_ptr() = default;
   template<class T>
@@ -124,7 +128,7 @@ class variant_ptr {
 
   template<class T>
   static constexpr bool holds_alternative(variant_ptr const self) noexcept {
-    return self.index() == types::template find<T>;
+    return variant_ptr::index(self) == types::template find<T>;
   }
 
   constexpr friend bool operator==(variant_ptr const p, std::nullptr_t) {
@@ -170,7 +174,7 @@ class variant_ptr {
   template<class Func>
   friend constexpr decltype(auto) visit(Func visitor, variant_ptr const self) //
       noexcept(is_visit_noexcept<Func, size>) {
-    auto const tag = self.index();
+    auto const tag = variant_ptr::index(self);
     BITPACK_ASSERT(0 <= tag);
     BITPACK_ASSERT(tag < size);
     return visit_nth<0>(self, visitor, tag);
