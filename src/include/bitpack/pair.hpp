@@ -58,7 +58,7 @@ class UInt_pair {
   friend auto to_std_pair(UInt_pair const self) noexcept {
     return std::pair(x(self), y(self));
   }
-  explicit operator std::pair<X, Y>() const { return to_std_pair(*this); }
+  explicit operator std::pair<X, Y>() const noexcept { return to_std_pair(*this); }
   // explicit because silently converting to std::pair can result in trying to
   // grab pointers to a temporary (pr value)
   //
@@ -94,10 +94,10 @@ template<class X, class Y, int low_bit_count = bits::bit_sizeof<Y>>
 using uintptr_pair = UInt_pair<X, Y, uintptr_t, low_bit_count>;
 template<class X, class Y, int low_bit_count = bits::bit_sizeof<Y>>
 constexpr auto make_uintptr_pair(X x, Y y)
-    BITPACK_NOEXCEPT_WRAP(uintptr_pair<X, Y, low_bit_count>(x, y));
+    BITPACK_EXPR_BODY(uintptr_pair<X, Y, low_bit_count>(x, y));
 template<int N>
 constexpr auto make_uintptr_pair(auto x, auto y)
-    BITPACK_NOEXCEPT_WRAP(make_uintptr_pair<decltype(x), decltype(y), N>(x, y));
+    BITPACK_EXPR_BODY(make_uintptr_pair<decltype(x), decltype(y), N>(x, y));
 
 } // namespace bitpack
 

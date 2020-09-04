@@ -29,6 +29,8 @@
 
 #define BITPACK_NOEXCEPT_WRAP(...)                                             \
   noexcept(noexcept(__VA_ARGS__)) { return __VA_ARGS__; }
+#define BITPACK_EXPR_BODY(...)                                                 \
+  noexcept(noexcept(__VA_ARGS__))->decltype(__VA_ARGS__) { return __VA_ARGS__; }
 
 namespace bitpack { namespace impl {
 bool constexpr is_assert_off = !BITPACK_ENABLE_ASSERT;

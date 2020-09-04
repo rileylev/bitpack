@@ -1,27 +1,23 @@
 #ifndef MAYBE_GET_INCLUDE_GUARD
 #define MAYBE_GET_INCLUDE_GUARD
 
+#include <bitpack/macros.hpp>
+
 // we can't implement get_if for variant_ptr because we don't store objects in a
 // way we can return a pointer to them. So instead, we implement a get that
 // returns an optional
 #include <optional>
 namespace bitpack {
 template<class T>
-constexpr auto maybe_get(auto variant) -> std::optional<T> {
-  if(holds_alternative<T>(variant))
-    return std::optional{get<T>(variant)};
-  else
-    return std::nullopt;
-}
+constexpr auto maybe_get(auto variant)
+    BITPACK_EXPR_BODY((holds_alternative<T>(variant))
+                          ? std::optional{get<T>(variant)}
+                          : std::nullopt);
 
 template<auto n>
 constexpr auto maybe_get(auto variant)
-    -> std::optional<std::remove_reference_t<decltype(get<n>(variant))>> {
-  if(variant.index() == n)
-    return std::optional{get<n>(variant)};
-  else
-    return std::nullopt;
-}
+    BITPACK_EXPR_BODY((variant.index() == n) ? std::optional{get<n>(variant)}
+                                             : std::nullopt);
 } // namespace bitpack
 
 #endif // MAYBE_GET_INCLUDE_GUARD

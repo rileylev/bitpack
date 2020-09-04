@@ -113,14 +113,14 @@ class variant_ptr {
   // these. niebloids.hpp defines niebloids that will forward to them too.
   template<Tag N>
   static constexpr auto get(variant_ptr const self) //
-      noexcept(impl::is_assert_off) {
+      noexcept(impl::is_assert_off) -> typename types::template nth<N> {
     static_assert(0 <= N && N < size, "The variant index is out of bounds");
     using T = typename types::template nth<N>;
     return get<T>(self);
   }
   template<class T>
   static constexpr auto get(variant_ptr const self) //
-      noexcept(impl::is_assert_off) {
+      noexcept(impl::is_assert_off) -> T {
     static_assert(types::template has<T>, "That type is not in this variant");
     BITPACK_ASSERT(holds_alternative<T>(self));
     return static_cast<T>(void_star(self));
