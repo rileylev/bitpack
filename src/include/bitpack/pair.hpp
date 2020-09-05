@@ -5,21 +5,24 @@
 #include <bitpack/workaround.hpp>
 
 #include <type_traits>
+#include <concepts>
 
 namespace bitpack {
 /**
  * A pair packed into a specified UInt type.
  */
-template<class X, class Y, class UInt, int low_bit_count_ = bits::bit_sizeof<Y>>
+template<class X,
+         class Y,
+         std::unsigned_integral UInt,
+         int low_bit_count_ = bits::bit_sizeof<Y>>
 class UInt_pair {
-  static_assert(std::is_unsigned_v<UInt>);
 
  public:
   static constexpr auto low_bit_count = low_bit_count_;
   static constexpr auto high_bit_count = sizeof(UInt) * 8 - low_bit_count;
   constexpr UInt_pair() = default;
-  explicit constexpr UInt_pair(X const x, Y const y) //
-      noexcept(impl::is_assert_off)
+  explicit constexpr UInt_pair(X const x,
+                               Y const y) noexcept(impl::is_assert_off)
       : x_{bits::as_UInt<UInt>(x)}, y_{bits::as_UInt<UInt>(y)} {
     // postcondition
     BITPACK_ASSERT(this->x() == x);
@@ -89,9 +92,9 @@ class UInt_pair {
            class BUint,                                                        \
            auto Bnum>                                                          \
   auto operator op(const UInt_pair<A0, A1, AUint, Anum>& a,                    \
-                   const UInt_pair<B0, B1, BUint, Bnum>& b) {                  \
-    return to_std_pair(a) op to_std_pair(b);                                   \
-  }
+                   const UInt_pair<B0, B1, BUint, Bnum>& b)                    \
+      BITPACK_EXPR_BODY(to_std_pair(a) op to_std_pair(b));
+
 BITPACK_DEF_COMPARE(==)
 BITPACK_DEF_COMPARE(<=>)
 

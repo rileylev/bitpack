@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <bit>
 #include <algorithm>
+#include <concepts>
 
 namespace bitpack {
 
@@ -18,15 +19,15 @@ namespace bitpack {
  */
 template<class Ptr,
          class Tag,
-         uintptr_t tag_bits_ = std::bit_width(alignof(traits::deref_t<Ptr>) - 1),
+         uintptr_t tag_bits_ = std::bit_width(alignof(traits::unptr_t<Ptr>) - 1),
          uintptr_t ptr_replacement_bits = 0u>
 class tagged_ptr {
  public:
   static constexpr uintptr_t tag_bits =
       std::max<uintptr_t>(tag_bits_, 1); // can't have 0 length bitfields :C
   constexpr tagged_ptr() = default;
-  explicit constexpr tagged_ptr(Ptr const ptr, Tag const tag) //
-      noexcept(impl::is_assert_off)
+  explicit constexpr tagged_ptr(Ptr const ptr,
+                                Tag const tag) noexcept(impl::is_assert_off)
       : pair_{bits::bit_cast<uintptr_t>(ptr) >> tag_bits, tag} {
     BITPACK_ASSERT(this->tag() == tag);
     BITPACK_ASSERT(this->ptr() == ptr);
@@ -42,8 +43,8 @@ class tagged_ptr {
     return decltype(pair)::y(pair);
   }
   constexpr Tag tag() const noexcept { return tag(*this); }
-  friend constexpr traits::deref_t<Ptr>
-      operator*(tagged_ptr const self) noexcept {
+  friend constexpr traits::unptr_t<Ptr>
+      operator*(tagged_ptr const self) noexcept{
     return *ptr(self);
   }
   constexpr Ptr operator->() const noexcept { return ptr(); }

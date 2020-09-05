@@ -6,6 +6,7 @@
 #include <array>
 #include <cstring>
 #include <bit>
+#include <concepts>
 
 namespace bitpack { namespace bits {
 
@@ -42,7 +43,7 @@ inline constexpr auto bytes_of(T const x) noexcept {
 }
 
 // polyfill: I don't have std::to_integer yet
-template<class T>
+template<std::integral T>
 inline constexpr T to_integer(auto const x) noexcept {
   return static_cast<T>(x);
 }
@@ -50,7 +51,7 @@ inline constexpr T to_integer(auto const x) noexcept {
 /**
  * Given a `T`, return (a copy of) its underlying bytes as a `UInt`
  */
-template<class UInt, class T>
+template<std::unsigned_integral UInt, class T>
 inline constexpr auto as_UInt(T const x) noexcept {
   auto const bytes = bytes_of(x);
   UInt acc{};
@@ -65,7 +66,7 @@ inline constexpr auto as_UInt(T const x) noexcept {
 /**
  * Unpack the underlying bits in a `UInt` back to `To`
  */
-template<class To, class From>
+template<class To, std::unsigned_integral From>
 inline constexpr auto from_UInt(From const from) noexcept {
   std::array<std::byte, sizeof(To)> bytes;
   // The inliner should see through this for little endian?

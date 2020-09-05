@@ -1,14 +1,23 @@
 #ifndef BITPACK_TRAITS_INCLUDE_GUARD
 #define BITPACK_TRAITS_INCLUDE_GUARD
 
-#include <type_traits>
+#include <concepts>
+
 namespace bitpack { namespace traits {
-// dereference of void* is undefined, but lets just say it's void since that is
-// close enough. maybe unpointer is a more accurate name?
+namespace impl {
 template<class T>
-using deref_t = std::conditional_t<std::is_same_v<std::decay_t<T>, void*>,
-                                   void,
-                                   decltype(*std::declval<T>())>;
+concept Derefable = requires(T ptr) {
+  *ptr;
+};
+void unptr_dispatch(void*);
+auto unptr_dispatch(Derefable auto ptr) { return *ptr; }
+} // namespace impl
+
+// unptr dereferences or converts void* -> void
+// not called deref_t because dereferencing void is undefined
+// not std::remove_pointer_t because what if we want to store smart pointers? idk
+template<class T>
+using unptr_t = decltype(impl::unptr_dispatch(std::declval<T>()));
 }} // namespace bitpack::traits
 
 #endif // BITPACK_TRAITS_INCLUDE_GUARD

@@ -108,7 +108,7 @@ class variant_ptr {
 
   constexpr variant_ptr() = default;
   template<class T>
-  explicit(alignof(traits::deref_t<T>) <= tag_bits)
+  explicit(alignof(traits::unptr_t<T>) <= tag_bits)
       // If alignment<= number. of tag bits, then inserting it into the variant
       // risks clobbering meaningful low bits of the address. So we require it
       // be done explicitly.
@@ -122,15 +122,16 @@ class variant_ptr {
   // workaround.hpp defines free functions in namespace bitpack that forwards to
   // these. niebloids.hpp defines niebloids that will forward to them too.
   template<Tag N>
-  static constexpr auto get(variant_ptr const self) //
-      noexcept(impl::is_assert_off) -> typename types::template nth<N> {
+  static constexpr auto
+      get(variant_ptr const self) noexcept(impl::is_assert_off) ->
+      typename types::template nth<N> {
     static_assert(0 <= N && N < size, "The variant index is out of bounds");
     using T = typename types::template nth<N>;
     return get<T>(self);
   }
   template<class T>
-  static constexpr auto get(variant_ptr const self) //
-      noexcept(impl::is_assert_off) -> T {
+  static constexpr auto
+      get(variant_ptr const self) noexcept(impl::is_assert_off) -> T {
     static_assert(types::template has<T>, "That type is not in this variant");
     BITPACK_ASSERT(holds_alternative<T>(self));
     return static_cast<T>(void_star(self));
@@ -169,10 +170,11 @@ class variant_ptr {
   template<class R, auto N, class Func>
   BITPACK_FORCEINLINE // help the compiler convert it to a switch?
       static R
-      visit_nth(variant_ptr const self, Func visitor, Tag const tag) //
-      noexcept(is_visit_noexcept<Func>) {
+      visit_nth(variant_ptr const self,
+                Func visitor,
+                Tag const tag) noexcept(is_visit_noexcept<Func>) {
     if constexpr(N >= size) {
-      BITPACK_ASSERT(N < size);
+      BITPACK_ASSERT(false);
       // just need the type. This is out of contract
       // conjure up a null deref in case we don't have a default constructor
       return impl::garbage_value<decltype(visitor(get<0>(self)))>();
@@ -188,7 +190,7 @@ class variant_ptr {
 
  public:
   template<class R, class Func>
-  static constexpr R visit(Func visitor, variant_ptr const self) //
+  static constexpr R visit(Func visitor, variant_ptr const self)
       noexcept(is_visit_noexcept<Func>) {
     auto const tag = variant_ptr::index(self);
     BITPACK_ASSERT(0 <= tag);
