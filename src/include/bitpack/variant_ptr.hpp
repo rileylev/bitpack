@@ -11,8 +11,7 @@
 namespace bitpack {
 namespace impl {
 
-template<class T>
-constexpr T garbage_value() noexcept {
+template<class T> constexpr T garbage_value() noexcept {
   // if this ever needs to handle a type with no default constructor, I think
   // this works. But disabling warnings is a pain
 
@@ -23,8 +22,7 @@ constexpr T garbage_value() noexcept {
  * This implements typelists and related functionality as needed for
  * variant_ptr
  */
-template<class... Ts>
-struct typelist {
+template<class... Ts> struct typelist {
  private:
   static_assert((... && !std::is_reference_v<Ts>),
                 "You can't put references in a variant_ptr");
@@ -33,15 +31,13 @@ struct typelist {
  public:
   static constexpr unsigned size = sizeof...(Ts);
 
-  template<int N>
-  using nth = std::tuple_element_t<N, type_tuple>;
+  template<int N> using nth = std::tuple_element_t<N, type_tuple>;
 
  private:
   template<class T, int n>
   static constexpr bool is_T_nth = std::is_same_v<T, nth<n>>;
 
-  template<class T, int N>
-  static constexpr int find_looper() noexcept {
+  template<class T, int N> static constexpr int find_looper() noexcept {
     if constexpr(N >= size) return N;
     // separate case to prevent instantiating is_T_nth with big N. The user gets
     // our error instead of std::tuple's
@@ -55,8 +51,7 @@ struct typelist {
   template<class T>
   static constexpr unsigned unguarded_find = find_looper<T, 0>();
 
-  template<class T>
-  static constexpr bool has = (unguarded_find<T> < size);
+  template<class T> static constexpr bool has = (unguarded_find<T> < size);
 
   template<class T>
   static constexpr unsigned find = [] {
@@ -92,8 +87,7 @@ struct visit_common_type_by_seq<variant_ptr, Func, std::index_sequence<i...>> {
 } // namespace impl
 
 // for now, we force the Ts to be raw pointers, but they could be something else
-template<class... Ts>
-class variant_ptr {
+template<class... Ts> class variant_ptr {
   using types = impl::typelist<Ts...>;
   static constexpr auto tag_bits = std::bit_width(types::size - 1);
 
@@ -190,8 +184,9 @@ class variant_ptr {
 
  public:
   template<class R, class Func>
-  static constexpr R visit(Func visitor, variant_ptr const self)
-      noexcept(is_visit_noexcept<Func>) {
+  static constexpr R
+      visit(Func visitor,
+            variant_ptr const self) noexcept(is_visit_noexcept<Func>) {
     auto const tag = variant_ptr::index(self);
     BITPACK_ASSERT(0 <= tag);
     BITPACK_ASSERT(tag < size);

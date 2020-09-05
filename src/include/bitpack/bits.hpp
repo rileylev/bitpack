@@ -10,8 +10,7 @@
 
 namespace bitpack { namespace bits {
 
-template<class T>
-constexpr auto bit_sizeof = sizeof(T) * 8;
+template<class T> constexpr auto bit_sizeof = sizeof(T) * 8;
 
 // from Guidelines Support Library
 // isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#gslutil-utilities
@@ -37,14 +36,12 @@ inline constexpr To bit_cast(From const x) noexcept {
  * Given an object of type T, return a std::array of (a copy of) the underlying
  * bytes.
  */
-template<class T>
-inline constexpr auto bytes_of(T const x) noexcept {
+template<class T> inline constexpr auto bytes_of(T const x) noexcept {
   return bit_cast<std::array<std::byte, sizeof(x)>>(x);
 }
 
 // polyfill: I don't have std::to_integer yet
-template<std::integral T>
-inline constexpr T to_integer(auto const x) noexcept {
+template<std::integral T> inline constexpr T to_integer(auto const x) noexcept {
   return static_cast<T>(x);
 }
 

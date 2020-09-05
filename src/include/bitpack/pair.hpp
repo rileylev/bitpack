@@ -38,11 +38,9 @@ class UInt_pair {
   constexpr X x() const noexcept { return x(*this); }
   constexpr Y y() const noexcept { return y(*this); }
 
-  template<int i>
-  using nth_t = std::conditional_t<i == 0, X, Y>;
+  template<int i> using nth_t = std::conditional_t<i == 0, X, Y>;
 
-  template<int i>
-  static constexpr nth_t<i> get(UInt_pair const pair) noexcept {
+  template<int i> static constexpr nth_t<i> get(UInt_pair const pair) noexcept {
     static_assert(i == 0 || i == 1, "That index is out of bounds.");
     if constexpr(i == 0)
       return x(pair);
@@ -50,8 +48,7 @@ class UInt_pair {
       return y(pair);
   }
 
-  template<class T>
-  static constexpr T get(UInt_pair const pair) noexcept {
+  template<class T> static constexpr T get(UInt_pair const pair) noexcept {
     constexpr bool isX = std::is_same_v<T, X>;
     constexpr bool isY = std::is_same_v<T, Y>;
     static_assert(isX || isY, "That is not a type in this pair.");

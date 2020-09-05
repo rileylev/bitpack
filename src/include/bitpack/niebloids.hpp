@@ -11,14 +11,12 @@ namespace niebloids {
 #define BITPACK_NIEBLOID_(template_type, name, fn_name, struct_name)           \
   namespace impl {                                                             \
   using std::fn_name;                                                          \
-  template<template_type T>                                                    \
-  struct struct_name {                                                         \
+  template<template_type T> struct struct_name {                               \
     constexpr auto operator()(auto&&... args) const                            \
         BITPACK_EXPR_BODY(fn_name<T>(BITPACK_FWD(args)...));                   \
   };                                                                           \
   }                                                                            \
-  template<template_type T>                                                    \
-  inline constexpr auto name = impl::struct_name<T>{};
+  template<template_type T> inline constexpr auto name = impl::struct_name<T>{};
 #define BITPACK_NIEBLOID(template_type, name, fn_name)                         \
   BITPACK_NIEBLOID_(template_type, name, fn_name, name##_struct)
 

@@ -44,7 +44,7 @@ class tagged_ptr {
   }
   constexpr Tag tag() const noexcept { return tag(*this); }
   friend constexpr traits::unptr_t<Ptr>
-      operator*(tagged_ptr const self) noexcept{
+      operator*(tagged_ptr const self) noexcept {
     return *ptr(self);
   }
   constexpr Ptr operator->() const noexcept { return ptr(); }
