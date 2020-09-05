@@ -13,24 +13,26 @@ struct assert_exception : std::exception {
 };
 
 #define BITPACK_ASSERT(...)                                                    \
-  [&]{if(!(__VA_ARGS__)) (throw assert_exception(__FILE__, __LINE__));}()
+  [&] {                                                                        \
+    if(!(__VA_ARGS__)) (throw assert_exception(__FILE__, __LINE__));           \
+  }()
 #include <bitpack/bitpack.hpp>
 #include <bitpack/niebloids.hpp>
 
 #include <catch2/catch.hpp>
 
-TEST_CASE("The asserts are on"){
+TEST_CASE("The asserts are on") {
   STATIC_REQUIRE(BITPACK_ENABLE_ASSERT);
   REQUIRE_THROWS(BITPACK_ASSERT(false));
 }
 
-TEST_CASE("from_uintptr and as_uintptr are inverses"){
-  int x =15124;
+TEST_CASE("from_uintptr and as_uintptr are inverses") {
+  int x = 15124;
   using namespace bitpack::bits;
-  REQUIRE(from_uintptr_t<int>(as_uintptr_t(x))==x);
+  REQUIRE(from_uintptr_t<int>(as_uintptr_t(x)) == x);
 
   uintptr_t y = 1340918;
-  REQUIRE(as_uintptr_t(from_uintptr_t<intptr_t>(y))==y);
+  REQUIRE(as_uintptr_t(from_uintptr_t<intptr_t>(y)) == y);
 }
 
 // pair
@@ -91,16 +93,19 @@ TEST_CASE(
   REQUIRE(nullptr != p);
 }
 
-TEST_CASE("tagged_ptr supports dereference operators"){
-  SECTION("operator*"){
-  int x = 3;
-  bitpack::tagged_ptr p{&x,0};
-  REQUIRE(*p==3);}
+TEST_CASE("tagged_ptr supports dereference operators") {
+  SECTION("operator*") {
+    int x = 3;
+    bitpack::tagged_ptr p{&x, 0};
+    REQUIRE(*p == 3);
+  }
 
-  SECTION("operator->"){
-  struct {int x;} box{2};
-  bitpack::tagged_ptr p{&box,3};
-  REQUIRE(p->x==2);
+  SECTION("operator->") {
+    struct {
+      int x;
+    } box{2};
+    bitpack::tagged_ptr p{&box, 3};
+    REQUIRE(p->x == 2);
   }
 }
 
@@ -142,12 +147,8 @@ TEST_CASE("maybe_get returns optional of its contents when it does hold that "
   REQUIRE(bitpack::maybe_get<1>(bpk_variant) == &y);
 }
 
-template<class... Fs>
-struct overload : Fs... {
-  using Fs::operator()...;
-};
-template<class... Fs>
-overload(Fs...) -> overload<Fs...>;
+template<class... Fs> struct overload : Fs... { using Fs::operator()...; };
+template<class... Fs> overload(Fs...) -> overload<Fs...>;
 
 namespace niebloids = bitpack::niebloids;
 TEST_CASE("Niebloids give == comparable values on bitpack containers and std "
@@ -192,22 +193,23 @@ TEST_CASE("Niebloids give == comparable values on bitpack containers and std "
     }
     using namespace std::literals;
     SECTION("visit") {
-      auto const visitor = overload{[](int*) { return "int*"s; },
-                                    [](float*) { return "float*"s; },
-                                    [](std::string*) { return "std::string*"s; }};
+      auto const visitor =
+          overload{[](int*) { return "int*"s; },
+                   [](float*) { return "float*"s; },
+                   [](std::string*) { return "std::string*"s; }};
 
       REQUIRE(niebloids::visit(visitor, bpk_variant)
               == niebloids::visit(visitor, std_variant));
 
       float y;
-      bpk_variant =&y;
-      std_variant =&y;
+      bpk_variant = &y;
+      std_variant = &y;
       REQUIRE(niebloids::visit(visitor, bpk_variant)
               == niebloids::visit(visitor, std_variant));
 
       std::string z;
-      bpk_variant =&z;
-      std_variant =&z;
+      bpk_variant = &z;
+      std_variant = &z;
       REQUIRE(niebloids::visit(visitor, bpk_variant)
               == niebloids::visit(visitor, std_variant));
     }
