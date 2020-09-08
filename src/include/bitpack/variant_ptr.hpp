@@ -86,7 +86,6 @@ struct visit_common_type_by_seq<variant_ptr, Func, std::index_sequence<i...>> {
 
 } // namespace impl
 
-// for now, we force the Ts to be raw pointers, but they could be something else
 template<class... Ts> class variant_ptr {
   using types = impl::typelist<Ts...>;
   static constexpr auto tag_bits = std::bit_width(types::size - 1);
