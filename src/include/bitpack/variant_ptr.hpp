@@ -10,14 +10,6 @@
 
 namespace bitpack {
 namespace impl {
-
-template<class T> constexpr T garbage_value() noexcept {
-  // if this ever needs to handle a type with no default constructor, I think
-  // this works. But disabling warnings is a pain
-
-  // return *static_cast<T*>(nullptr);
-  return {};
-}
 /**
  * This implements typelists and related functionality as needed for
  * variant_ptr
@@ -97,7 +89,7 @@ template<class... Ts> class variant_ptr {
     auto const ptr = self.ptr_;
     return decltype(ptr)::tag(ptr);
   }
-  constexpr Tag index() const noexcept { return decltype(ptr_)::tag(ptr_); }
+  constexpr Tag index() const noexcept { return index(*this); }
 
   constexpr variant_ptr() = default;
   template<class T>
@@ -160,17 +152,13 @@ template<class... Ts> class variant_ptr {
       Func,
       std::make_index_sequence<size>>::type;
 
-  template<class R, auto N, class Func>
-  BITPACK_FORCEINLINE // help the compiler convert it to a switch?
-      static R
-      visit_nth(variant_ptr const self,
-                Func visitor,
-                Tag const tag) noexcept(is_visit_noexcept<Func>) {
-    if constexpr(N >= size) {
-      BITPACK_ASSERT(false);
-      // just need the type. This is out of contract
-      // conjure up a null deref in case we don't have a default constructor
-      return impl::garbage_value<decltype(visitor(get<0>(self)))>();
+  template<class R, Tag N, class Func>
+  static R visit_nth(variant_ptr const self,
+                     Func visitor,
+                     Tag const tag) noexcept(is_visit_noexcept<Func>) {
+    static_assert(0 <= N && N < size);
+    if constexpr(N == size-1) {
+      return visitor(get<N>(self));
     } else {
       if(tag == N)
         return visitor(get<N>(self));

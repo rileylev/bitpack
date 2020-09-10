@@ -1,14 +1,10 @@
 #ifndef BITPACK_MACROS_INCLUDE_GUARD
 #define BITPACK_MACROS_INCLUDE_GUARD
 
+// Maybe FORCEINLINE, but won't do it until there's tests to see if it generates better code
 // to check msvc, _MSC_VER
 // to force inline on msvc, __forceinline
 // I will not write any msvc specific code until I have a way to test it set up
-#if defined(__GNUC__)
-#  define BITPACK_FORCEINLINE __attribute__((always_inline))
-#else
-#  define BITPACK_FORCEINLINE
-#endif
 
 #if defined(BITPACK_ASSERT)
 #  if defined(BITPACK_ENABLE_ASSERT)
