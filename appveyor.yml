@@ -1,0 +1,13 @@
+image:
+- Visual Studio 2019
+clone_folder: c:\projects\source
+build_script:
+  - cmd: mkdir build
+  - cmd: cd build
+  - cmd: pip install --user conan
+  - cmd: set PATH=%PATH%;C:\Users\appveyor\AppData\Roaming\Python\Scripts
+  - cmd: conan install ..
+  - cmd: cmake c:\projects\source -G "Visual Studio 16 2019"
+  - cmd: cmake --build .
+test_script:
+- cmd: ctest .
