@@ -39,6 +39,6 @@ AlwaysBreakTemplateDeclarations: MultiLine
 SpaceBeforeParens: Never
 
 PenaltyBreakBeforeFirstCallParameter: 1000
-PenaltyExcessCharacter: 200
+PenaltyExcessCharacter: 100
 PenaltyReturnTypeOnItsOwnLine: 50
 PenaltyBreakTemplateDeclaration: 20
