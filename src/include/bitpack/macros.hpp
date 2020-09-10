@@ -1,10 +1,9 @@
 #ifndef BITPACK_MACROS_INCLUDE_GUARD
 #define BITPACK_MACROS_INCLUDE_GUARD
 
-// Maybe FORCEINLINE, but won't do it until there's tests to see if it generates better code
-// to check msvc, _MSC_VER
-// to force inline on msvc, __forceinline
-// I will not write any msvc specific code until I have a way to test it set up
+// Maybe FORCEINLINE, but won't do it until there's tests to see if it generates
+// better code to check msvc, _MSC_VER to force inline on msvc, __forceinline I
+// will not write any msvc specific code until I have a way to test it set up
 
 #if defined(BITPACK_ASSERT)
 #  if defined(BITPACK_ENABLE_ASSERT)
@@ -29,7 +28,21 @@
   noexcept(noexcept(__VA_ARGS__))->decltype(__VA_ARGS__) { return __VA_ARGS__; }
 
 namespace bitpack { namespace impl {
-bool constexpr is_assert_off = !BITPACK_ENABLE_ASSERT;
+inline bool constexpr is_assert_off = !BITPACK_ENABLE_ASSERT;
 }} // namespace bitpack::impl
+
+#if defined(__GNUC__) || defined(__clang__)
+#  define BITPACK_WRETURN_OFF                                                  \
+    _Pragma("GCC diagnostic push")                                             \
+        _Pragma("GCC diagnostic ignored \"-Wreturn-type\"")
+#  define BITPACK_DIAGNOSTIC_POP _Pragma("GCC diagnostic pop")
+#elif defined(_MSC_VER)
+#  define BITPACK_WRETURN_OFF                                                  \
+    __pragma(warning(push)) __pragma(warning(disable : 4715))
+#  define BITPACK_DIAGNOSTIC_POP __pragma(warning(pop))
+#else
+#  define BITPACK_WRETURN_OFF
+#  define BITPACK_DIAGNOSTIC_POP
+#endif
 
 #endif

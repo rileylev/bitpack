@@ -3,6 +3,7 @@
 
 #include <bitpack/macros.hpp>
 
+#include <cstdint>
 #include <array>
 #include <cstring>
 #include <bit>
@@ -73,7 +74,7 @@ inline constexpr auto from_UInt(From const from) noexcept {
 }
 
 inline constexpr auto as_uintptr_t(auto const x) noexcept {
-  return as_UInt<uintptr_t>(x);
+  return as_UInt<std::uintptr_t>(x);
 }
 
 template<class To>

@@ -52,7 +52,7 @@ class tagged_ptr {
   constexpr Ptr get() const noexcept { return ptr(); }
 
   friend constexpr bool operator==(tagged_ptr const p, std::nullptr_t) {
-    return p.get() == nullptr;
+    return ptr(p) == nullptr;
   }
   friend constexpr bool operator==(std::nullptr_t, tagged_ptr const p) {
     return p == nullptr;

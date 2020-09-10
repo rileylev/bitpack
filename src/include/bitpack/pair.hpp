@@ -51,13 +51,14 @@ class UInt_pair {
   template<class T> static constexpr T get(UInt_pair const pair) noexcept {
     constexpr bool isX = std::is_same_v<T, X>;
     constexpr bool isY = std::is_same_v<T, Y>;
-    static_assert(isX || isY, "That is not a type in this pair.");
+    static_assert(isX || isY, "That type is not in this pair.");
     if constexpr(isX)
       return x(pair);
     else if(isY)
       return y(pair);
   }
 
+  // it's annoying to spell out the exact type
   friend std::pair<X, Y> to_std_pair(UInt_pair const self) noexcept {
     return std::pair(x(self), y(self));
   }

@@ -152,12 +152,39 @@ template<class... Ts> class variant_ptr {
       Func,
       std::make_index_sequence<size>>::type;
 
+  BITPACK_WRETURN_OFF
+#define BITPACK_VISIT_CASE(n)                                                  \
+  case n: return visitor(get<n>(self));
+
+  template<class R, class Func>
+  static R visit_2(variant_ptr const self,
+                   Func visitor,
+                   Tag const tag) noexcept(is_visit_noexcept<Func>) {
+    switch(tag) {
+      BITPACK_VISIT_CASE(0)
+      BITPACK_VISIT_CASE(1)
+    }
+  }
+
+  template<class R, class Func>
+  static R visit_3(variant_ptr const self,
+                   Func visitor,
+                   Tag const tag) noexcept(is_visit_noexcept<Func>) {
+    switch(tag) {
+      BITPACK_VISIT_CASE(0)
+      BITPACK_VISIT_CASE(1)
+      BITPACK_VISIT_CASE(2)
+    }
+  }
+  BITPACK_DIAGNOSTIC_POP
+#undef BITPACK_VISIT_CASE
+
   template<class R, Tag N, class Func>
   static R visit_nth(variant_ptr const self,
                      Func visitor,
                      Tag const tag) noexcept(is_visit_noexcept<Func>) {
     static_assert(0 <= N && N < size);
-    if constexpr(N == size-1) {
+    if constexpr(N == size - 1) {
       return visitor(get<N>(self));
     } else {
       if(tag == N)
@@ -175,9 +202,13 @@ template<class... Ts> class variant_ptr {
       visit(Func visitor,
             variant_ptr const self) noexcept(is_visit_noexcept<Func>) {
     auto const tag = variant_ptr::index(self);
-    BITPACK_ASSERT(0 <= tag);
-    BITPACK_ASSERT(tag < size);
-    return visit_nth<R, 0>(self, visitor, tag);
+    BITPACK_ASSERT(0 <= tag && tag < size);
+    if constexpr(size == 2)
+      return visit_2<R>(self, visitor, tag);
+    else if constexpr(size == 3)
+      return visit_3<R>(self, visitor, tag);
+    else
+      return visit_nth<R, 0>(self, visitor, tag);
   }
 
   template<class Func>
