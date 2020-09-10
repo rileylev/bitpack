@@ -65,5 +65,4 @@ inline bool constexpr is_assert_off = !BITPACK_ENABLE_ASSERT;
 #define BITPACK_REPEAT_OUTER_3(macro) BITPACK_REPEAT_OUTER_2(macro) macro(2)
 #define BITPACK_REPEAT_OUTER_4(macro) BITPACK_REPEAT_OUTER_3(macro) macro(3)
 
-
 #endif
