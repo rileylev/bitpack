@@ -25,6 +25,8 @@ endif()
 find_program(CLANGTIDY clang-tidy)
 set(CMAKE_CXX_CLANG_TIDY ${CLANGTIDY} -extra-arg=-Wno-unknown-warning-option)
 
+if (CMAKE_GENERATOR MATCHES "Visual Studio")
+else()
 add_compile_options(tester PRIVATE
   -fsanitize=address
   -Werror
@@ -40,3 +42,4 @@ add_compile_options(tester PRIVATE
   -Wnull-dereference
   -Wdouble-promotion
   )
+endif()
