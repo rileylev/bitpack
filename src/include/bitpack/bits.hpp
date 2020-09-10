@@ -3,14 +3,15 @@
 
 #include <bitpack/macros.hpp>
 
+#include <cstdint>
 #include <array>
 #include <cstring>
 #include <bit>
+#include <concepts>
 
 namespace bitpack { namespace bits {
 
-template<class T>
-constexpr auto bit_sizeof = sizeof(T) * 8;
+template<class T> constexpr auto bit_sizeof = sizeof(T) * 8;
 
 // from Guidelines Support Library
 // isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#gslutil-utilities
@@ -36,21 +37,19 @@ inline constexpr To bit_cast(From const x) noexcept {
  * Given an object of type T, return a std::array of (a copy of) the underlying
  * bytes.
  */
-template<class T>
-inline constexpr auto bytes_of(T const x) noexcept {
+template<class T> inline constexpr auto bytes_of(T const x) noexcept {
   return bit_cast<std::array<std::byte, sizeof(x)>>(x);
 }
 
 // polyfill: I don't have std::to_integer yet
-template<class T>
-inline constexpr T to_integer(auto const x) noexcept {
+template<std::integral T> inline constexpr T to_integer(auto const x) noexcept {
   return static_cast<T>(x);
 }
 
 /**
  * Given a `T`, return (a copy of) its underlying bytes as a `UInt`
  */
-template<class UInt, class T>
+template<std::unsigned_integral UInt, class T>
 inline constexpr auto as_UInt(T const x) noexcept {
   auto const bytes = bytes_of(x);
   UInt acc{};
@@ -65,7 +64,7 @@ inline constexpr auto as_UInt(T const x) noexcept {
 /**
  * Unpack the underlying bits in a `UInt` back to `To`
  */
-template<class To, class From>
+template<class To, std::unsigned_integral From>
 inline constexpr auto from_UInt(From const from) noexcept {
   std::array<std::byte, sizeof(To)> bytes;
   // The inliner should see through this for little endian?
@@ -75,7 +74,7 @@ inline constexpr auto from_UInt(From const from) noexcept {
 }
 
 inline constexpr auto as_uintptr_t(auto const x) noexcept {
-  return as_UInt<uintptr_t>(x);
+  return as_UInt<std::uintptr_t>(x);
 }
 
 template<class To>

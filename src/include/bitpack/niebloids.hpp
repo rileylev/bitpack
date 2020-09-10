@@ -6,20 +6,17 @@
 #include <variant>
 
 namespace bitpack {
-#define BITPACK_FWD(x) std::forward<decltype(x)>(x)
 #include <variant>
 namespace niebloids {
 #define BITPACK_NIEBLOID_(template_type, name, fn_name, struct_name)           \
   namespace impl {                                                             \
   using std::fn_name;                                                          \
-  template<template_type T>                                                    \
-  struct struct_name {                                                         \
-    constexpr decltype(auto) operator()(auto&&... args) const                  \
-        BITPACK_NOEXCEPT_WRAP(fn_name<T>(BITPACK_FWD(args)...));               \
+  template<template_type T> struct struct_name {                               \
+    constexpr auto operator()(auto&&... args) const                            \
+        BITPACK_EXPR_BODY(fn_name<T>(BITPACK_FWD(args)...));                   \
   };                                                                           \
   }                                                                            \
-  template<template_type T>                                                    \
-  constexpr auto name = impl::struct_name<T>{};
+  template<template_type T> inline constexpr auto name = impl::struct_name<T>{};
 #define BITPACK_NIEBLOID(template_type, name, fn_name)                         \
   BITPACK_NIEBLOID_(template_type, name, fn_name, name##_struct)
 
@@ -33,11 +30,11 @@ BITPACK_NIEBLOID(class, holds_alternative, holds_alternative)
 namespace impl {
 using std::visit;
 struct visit_struct {
-  constexpr decltype(auto) operator()(auto&&... args) const
-      BITPACK_NOEXCEPT_WRAP(visit(BITPACK_FWD(args)...));
+  constexpr auto operator()(auto&&... args) const
+      BITPACK_EXPR_BODY(visit(BITPACK_FWD(args)...));
 };
 } // namespace impl
-[[maybe_unused]] constexpr impl::visit_struct visit{};
+[[maybe_unused]] inline constexpr impl::visit_struct visit{};
 } // namespace niebloids
 } // namespace bitpack
 

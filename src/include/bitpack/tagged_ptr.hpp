@@ -7,6 +7,7 @@
 #include <cstddef>
 #include <bit>
 #include <algorithm>
+#include <concepts>
 
 namespace bitpack {
 
@@ -18,29 +19,40 @@ namespace bitpack {
  */
 template<class Ptr,
          class Tag,
-         uintptr_t tag_bits_ = std::bit_width(alignof(traits::deref_t<Ptr>) - 1),
+         uintptr_t tag_bits_ = std::bit_width(alignof(traits::unptr_t<Ptr>) - 1),
          uintptr_t ptr_replacement_bits = 0u>
 class tagged_ptr {
  public:
   static constexpr uintptr_t tag_bits =
       std::max<uintptr_t>(tag_bits_, 1); // can't have 0 length bitfields :C
   constexpr tagged_ptr() = default;
-  explicit constexpr tagged_ptr(Ptr const ptr, Tag const tag) //
-      noexcept(impl::is_assert_off)
+  explicit constexpr tagged_ptr(Ptr const ptr,
+                                Tag const tag) noexcept(impl::is_assert_off)
       : pair_{bits::bit_cast<uintptr_t>(ptr) >> tag_bits, tag} {
     BITPACK_ASSERT(this->tag() == tag);
     BITPACK_ASSERT(this->ptr() == ptr);
   }
-  constexpr Ptr ptr() const noexcept {
-    return bits::bit_cast<Ptr>((pair_.x() << tag_bits) | ptr_replacement_bits);
+  constexpr static Ptr ptr(tagged_ptr const self) noexcept {
+    auto const pair = self.pair_;
+    return bits::bit_cast<Ptr>((decltype(pair)::x(pair) << tag_bits)
+                               | ptr_replacement_bits);
   }
-  constexpr Tag tag() const noexcept { return pair_.y(); }
-  constexpr auto& operator*() const noexcept { return *ptr(); }
-  constexpr auto operator->() const noexcept { return ptr(); }
-  constexpr auto get() const noexcept { return ptr(); }
+  constexpr Ptr ptr() const noexcept { return ptr(*this); }
+  constexpr static Tag tag(tagged_ptr const self) noexcept {
+    auto const pair = self.pair_;
+    return decltype(pair)::y(pair);
+  }
+  constexpr Tag tag() const noexcept { return tag(*this); }
+  friend constexpr traits::unptr_t<Ptr>
+      operator*(tagged_ptr const self) noexcept
+      requires(!std::is_void_v<traits::unptr_t<Ptr>>) {
+    return *ptr(self);
+  }
+  constexpr Ptr operator->() const noexcept { return ptr(); }
+  constexpr Ptr get() const noexcept { return ptr(); }
 
   friend constexpr bool operator==(tagged_ptr const p, std::nullptr_t) {
-    return p.get() == nullptr;
+    return ptr(p) == nullptr;
   }
   friend constexpr bool operator==(std::nullptr_t, tagged_ptr const p) {
     return p == nullptr;

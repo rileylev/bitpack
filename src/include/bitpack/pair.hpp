@@ -5,54 +5,66 @@
 #include <bitpack/workaround.hpp>
 
 #include <type_traits>
+#include <concepts>
 
 namespace bitpack {
 /**
  * A pair packed into a specified UInt type.
  */
-template<class X, class Y, class UInt, int low_bit_count_ = bits::bit_sizeof<Y>>
+template<class X,
+         class Y,
+         std::unsigned_integral UInt,
+         int low_bit_count_ = bits::bit_sizeof<Y>>
 class UInt_pair {
-  static_assert(std::is_unsigned_v<UInt>);
 
  public:
   static constexpr auto low_bit_count = low_bit_count_;
   static constexpr auto high_bit_count = sizeof(UInt) * 8 - low_bit_count;
   constexpr UInt_pair() = default;
-  explicit constexpr UInt_pair(X const x, Y const y) //
-      noexcept(impl::is_assert_off)
+  explicit constexpr UInt_pair(X const x,
+                               Y const y) noexcept(impl::is_assert_off)
       : x_{bits::as_UInt<UInt>(x)}, y_{bits::as_UInt<UInt>(y)} {
     // postcondition
     BITPACK_ASSERT(this->x() == x);
     BITPACK_ASSERT(this->y() == y);
   }
 
-  constexpr X x() const noexcept { return bits::from_UInt<X>(x_); }
-  constexpr Y y() const noexcept { return bits::from_UInt<Y>(y_); }
+  constexpr static X x(const UInt_pair self) noexcept {
+    return bits::from_UInt<X>(self.x_);
+  }
+  constexpr static Y y(const UInt_pair self) noexcept {
+    return bits::from_UInt<Y>(self.y_);
+  }
+  constexpr X x() const noexcept { return x(*this); }
+  constexpr Y y() const noexcept { return y(*this); }
 
-  template<int i>
-  static constexpr auto get(UInt_pair const pair) noexcept {
+  template<int i> using nth_t = std::conditional_t<i == 0, X, Y>;
+
+  template<int i> static constexpr nth_t<i> get(UInt_pair const pair) noexcept {
     static_assert(i == 0 || i == 1, "That index is out of bounds.");
     if constexpr(i == 0)
-      return pair.x();
+      return x(pair);
     else if(i == 1)
-      return pair.y();
+      return y(pair);
   }
 
-  template<class T>
-  static constexpr auto get(UInt_pair const pair) noexcept {
+  template<class T> static constexpr T get(UInt_pair const pair) noexcept {
     constexpr bool isX = std::is_same_v<T, X>;
     constexpr bool isY = std::is_same_v<T, Y>;
-    static_assert(isX || isY, "That is not a type in this pair.");
+    static_assert(isX || isY, "That type is not in this pair.");
     if constexpr(isX)
-      return pair.x();
+      return x(pair);
     else if(isY)
-      return pair.y();
+      return y(pair);
   }
 
-  friend auto to_std_pair(UInt_pair const self) noexcept {
-    return std::pair(self.x(), self.y());
+  // it's annoying to spell out the exact type
+  friend std::pair<X, Y> to_std_pair(UInt_pair const self) noexcept {
+    return std::pair(x(self), y(self));
   }
-  explicit operator std::pair<X, Y>() const { return to_std_pair(*this); }
+  explicit operator std::pair<X, Y>() const noexcept {
+    return to_std_pair(*this);
+  }
   // explicit because silently converting to std::pair can result in trying to
   // grab pointers to a temporary (pr value)
   //
@@ -78,9 +90,9 @@ class UInt_pair {
            class BUint,                                                        \
            auto Bnum>                                                          \
   auto operator op(const UInt_pair<A0, A1, AUint, Anum>& a,                    \
-                   const UInt_pair<B0, B1, BUint, Bnum>& b) {                  \
-    return to_std_pair(a) op to_std_pair(b);                                   \
-  }
+                   const UInt_pair<B0, B1, BUint, Bnum>& b)                    \
+      BITPACK_EXPR_BODY(to_std_pair(a) op to_std_pair(b));
+
 BITPACK_DEF_COMPARE(==)
 BITPACK_DEF_COMPARE(<=>)
 
@@ -88,10 +100,10 @@ template<class X, class Y, int low_bit_count = bits::bit_sizeof<Y>>
 using uintptr_pair = UInt_pair<X, Y, uintptr_t, low_bit_count>;
 template<class X, class Y, int low_bit_count = bits::bit_sizeof<Y>>
 constexpr auto make_uintptr_pair(X x, Y y)
-    BITPACK_NOEXCEPT_WRAP(uintptr_pair<X, Y, low_bit_count>(x, y));
+    BITPACK_EXPR_BODY(uintptr_pair<X, Y, low_bit_count>(x, y));
 template<int N>
 constexpr auto make_uintptr_pair(auto x, auto y)
-    BITPACK_NOEXCEPT_WRAP(make_uintptr_pair<decltype(x), decltype(y), N>(x, y));
+    BITPACK_EXPR_BODY(make_uintptr_pair<decltype(x), decltype(y), N>(x, y));
 
 } // namespace bitpack
 
