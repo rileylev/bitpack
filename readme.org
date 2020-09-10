@@ -1,7 +1,10 @@
 * What?
-A single file header only library that provides a few bitpacked data structures
+A header only library that provides a few bitpacked data structures
 - ~UInt_pair~ stores a pair in the bits of a single integer type.
 - ~tagged_ptr~ stores a pointer plus some data in the bottom few bits.
 - ~variant_ptr~ stores a pointer plus a tag that indicates which type it points to
+These are useful building blocks for creating cache-friendly data structures.
+
+These are intended to be somewhat interopable with ~std::pair~ and ~std::variant~, with some limitations. Also, ~tagged_ptr~'s interface is losely modeled off of ~std::unique~ and ~std::shared~.
 * Examples?
 I haven't written them here yet, but you will find some basic usage in ~tests/test.cpp~
