@@ -12,6 +12,7 @@ find_package(Catch2 REQUIRED)
 
 set(CMAKE_BUILD_TYPE Debug)
 
+target_compile_features(bitpack INTERFACE cxx_std_20)
 target_link_libraries(tester
   PRIVATE
   bitpack::bitpack
