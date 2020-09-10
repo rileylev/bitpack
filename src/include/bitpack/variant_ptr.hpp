@@ -153,13 +153,17 @@ template<class... Ts> class variant_ptr {
       Func,
       std::make_index_sequence<size>>::type;
 
-  BITPACK_WRETURN_OFF
+// up to what size should we generate visitor code?
+#  ifndef BITPACK_UNROLL_VISIT_COUNT
+#    define BITPACK_UNROLL_VISIT_COUNT 4
+#  endif
+
 #  define BITPACK_VISIT_CASE(n)                                                \
     case n: return visitor(get<n>(self));
 
-  // For small size, we can unroll the logic in visit into one switch statement.
-  // Unfortunately, there is no way to expand a parameter pack into cases, so
-  // this uses a macro instead.
+  // For small sizes, we can unroll the recursion in visit_nth into one switch
+  // statement. Unfortunately, there is no way to expand a parameter pack into
+  // cases, so this uses a macro instead.
 #  define BITPACK_UNROLL_VISIT_N(n)                                            \
     template<class R, class Func>                                              \
     static R visit_##n(variant_ptr const self,                                 \
@@ -168,10 +172,14 @@ template<class... Ts> class variant_ptr {
       switch(tag) { BITPACK_REPEAT(BITPACK_VISIT_CASE, n) }                    \
     }
 
+  // index can only be in [0, size), but the compiler does not realize this.
+  // We don't need a default in the switch. Asserts + static_asserts enforce
+  // this invariant.
+  BITPACK_WRETURN_OFF
   BITPACK_REPEAT_OUTER(BITPACK_UNROLL_VISIT_N, BITPACK_UNROLL_VISIT_COUNT)
-
-#  undef BITPACK_VISIT_CASE
   BITPACK_DIAGNOSTIC_POP
+#  undef BITPACK_UNROLL_VISIT_N
+#  undef BITPACK_VISIT_CASE
 
   // generic case visitor that uses template recursion
   template<class R, Tag N, class Func>
@@ -192,25 +200,22 @@ template<class... Ts> class variant_ptr {
   tagged_ptr<void*, Tag, tag_bits> ptr_;
 
  public:
-#  if true
   template<class R, class Func>
   static constexpr R
       visit(Func visitor,
             variant_ptr const self) noexcept(is_visit_noexcept<Func>) {
+#  if true
     auto const tag = variant_ptr::index(self);
     BITPACK_ASSERT(0 <= tag && tag < size);
-
 #    define BITPACK_VISIT_RESOLVE_CASE(n)                                      \
       if constexpr(size == n)                                                  \
         return visit_##n<R>(self, visitor, tag);                               \
       else
-
     BITPACK_REPEAT(BITPACK_VISIT_RESOLVE_CASE, BITPACK_UNROLL_VISIT_COUNT)
-
 #    undef BITPACK_VISIT_RESOLVE_CASE
     return visit_nth<R, 0>(self, visitor, tag);
-  }
 #  endif
+  }
 
   template<class Func>
   static constexpr auto visit(Func visitor, variant_ptr const self)
