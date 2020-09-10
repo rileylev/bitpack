@@ -78,6 +78,7 @@ struct visit_common_type_by_seq<variant_ptr, Func, std::index_sequence<i...>> {
 
 } // namespace impl
 
+#if true
 template<class... Ts> class variant_ptr {
   using types = impl::typelist<Ts...>;
   static constexpr auto tag_bits = std::bit_width(types::size - 1);
@@ -153,32 +154,26 @@ template<class... Ts> class variant_ptr {
       std::make_index_sequence<size>>::type;
 
   BITPACK_WRETURN_OFF
-#define BITPACK_VISIT_CASE(n)                                                  \
-  case n: return visitor(get<n>(self));
+#  define BITPACK_VISIT_CASE(n)                                                \
+    case n: return visitor(get<n>(self));
 
-  template<class R, class Func>
-  static R visit_2(variant_ptr const self,
-                   Func visitor,
-                   Tag const tag) noexcept(is_visit_noexcept<Func>) {
-    switch(tag) {
-      BITPACK_VISIT_CASE(0)
-      BITPACK_VISIT_CASE(1)
+  // For small size, we can unroll the logic in visit into one switch statement.
+  // Unfortunately, there is no way to expand a parameter pack into cases, so
+  // this uses a macro instead.
+#  define BITPACK_UNROLL_VISIT_N(n)                                            \
+    template<class R, class Func>                                              \
+    static R visit_##n(variant_ptr const self,                                 \
+                       Func visitor,                                           \
+                       Tag const tag) noexcept(is_visit_noexcept<Func>) {      \
+      switch(tag) { BITPACK_REPEAT(BITPACK_VISIT_CASE, n) }                    \
     }
-  }
 
-  template<class R, class Func>
-  static R visit_3(variant_ptr const self,
-                   Func visitor,
-                   Tag const tag) noexcept(is_visit_noexcept<Func>) {
-    switch(tag) {
-      BITPACK_VISIT_CASE(0)
-      BITPACK_VISIT_CASE(1)
-      BITPACK_VISIT_CASE(2)
-    }
-  }
+  BITPACK_REPEAT_OUTER(BITPACK_UNROLL_VISIT_N, BITPACK_UNROLL_VISIT_COUNT)
+
+#  undef BITPACK_VISIT_CASE
   BITPACK_DIAGNOSTIC_POP
-#undef BITPACK_VISIT_CASE
 
+  // generic case visitor that uses template recursion
   template<class R, Tag N, class Func>
   static R visit_nth(variant_ptr const self,
                      Func visitor,
@@ -197,24 +192,31 @@ template<class... Ts> class variant_ptr {
   tagged_ptr<void*, Tag, tag_bits> ptr_;
 
  public:
+#  if true
   template<class R, class Func>
   static constexpr R
       visit(Func visitor,
             variant_ptr const self) noexcept(is_visit_noexcept<Func>) {
     auto const tag = variant_ptr::index(self);
     BITPACK_ASSERT(0 <= tag && tag < size);
-    if constexpr(size == 2)
-      return visit_2<R>(self, visitor, tag);
-    else if constexpr(size == 3)
-      return visit_3<R>(self, visitor, tag);
-    else
-      return visit_nth<R, 0>(self, visitor, tag);
+
+#    define BITPACK_VISIT_RESOLVE_CASE(n)                                      \
+      if constexpr(size == n)                                                  \
+        return visit_##n<R>(self, visitor, tag);                               \
+      else
+
+    BITPACK_REPEAT(BITPACK_VISIT_RESOLVE_CASE, BITPACK_UNROLL_VISIT_COUNT)
+
+#    undef BITPACK_VISIT_RESOLVE_CASE
+    return visit_nth<R, 0>(self, visitor, tag);
   }
+#  endif
 
   template<class Func>
   static constexpr auto visit(Func visitor, variant_ptr const self)
       BITPACK_EXPR_BODY(visit<visit_common_type<Func>, Func>(visitor, self))
 };
+#endif
 
 // possible future directions:
 // - derived_variant_ptr. Put the rtti into a tag
