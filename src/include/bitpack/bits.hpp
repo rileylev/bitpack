@@ -16,8 +16,7 @@ template<class T> constexpr auto bit_sizeof = sizeof(T) * 8;
 // from Guidelines Support Library
 // isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#gslutil-utilities
 template<class T>
-inline constexpr T narrow(auto const x) //
-    noexcept(impl::is_assert_off) {
+inline constexpr T narrow(auto const x) noexcept(impl::is_assert_off) {
   T casted = static_cast<T>(x);
   BITPACK_ASSERT(static_cast<decltype(x)>(casted) == x);
   return casted;

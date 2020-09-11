@@ -16,16 +16,29 @@ namespace bitpack {
  * `tag_size` of lowest bits). Optionally, use `ptr_replacement_bits` to fill
  * the low bits of the pointer back in. Provide a smart pointer-- like
  * interface to get at the underlying pointer.
+ *
+ * Ptr = the pointer type to hold
+ * Tag = the tag type to hold (probably an enum or small number)
+ * tag_bits_ = the number of bits needed to store the tag
+ * ptr_replacement_bits = if the low bits of the pointer aren't 0, what should
+ * they be filled in with?
  */
 template<class Ptr,
          class Tag,
          uintptr_t tag_bits_ = std::bit_width(alignof(traits::unptr_t<Ptr>) - 1),
          uintptr_t ptr_replacement_bits = 0u>
 class tagged_ptr {
+ private:
+  static constexpr bool holds_void = std::is_void_v<traits::unptr_t<Ptr>>;
+
  public:
   static constexpr uintptr_t tag_bits =
       std::max<uintptr_t>(tag_bits_, 1); // can't have 0 length bitfields :C
   constexpr tagged_ptr() = default;
+  /**
+   * ptr = the pointer to store
+   * tag = the tag to store
+   */
   explicit constexpr tagged_ptr(Ptr const ptr,
                                 Tag const tag) noexcept(impl::is_assert_off)
       : pair_{bits::bit_cast<uintptr_t>(ptr) >> tag_bits, tag} {
@@ -42,13 +55,17 @@ class tagged_ptr {
     auto const pair = self.pair_;
     return decltype(pair)::y(pair);
   }
+
   constexpr Tag tag() const noexcept { return tag(*this); }
+
   friend constexpr traits::unptr_t<Ptr>
-      operator*(tagged_ptr const self) noexcept
-      requires(!std::is_void_v<traits::unptr_t<Ptr>>) {
+      operator*(tagged_ptr const self) noexcept requires(!holds_void) {
     return *ptr(self);
   }
   constexpr Ptr operator->() const noexcept { return ptr(); }
+  /**
+   * returns the pointer stored
+   */
   constexpr Ptr get() const noexcept { return ptr(); }
 
   friend constexpr bool operator==(tagged_ptr const p, std::nullptr_t) {

@@ -1,7 +1,117 @@
 * What?
-A single file header only library that provides a few bitpacked data structures
+A header only library that provides a few bitpacked data structures
 - ~UInt_pair~ stores a pair in the bits of a single integer type.
 - ~tagged_ptr~ stores a pointer plus some data in the bottom few bits.
 - ~variant_ptr~ stores a pointer plus a tag that indicates which type it points to
+These are useful building blocks for creating cache-friendly data structures.
+
+These are intended to be somewhat interopable with ~std::pair~ and ~std::variant~, with some limitations. Also, ~tagged_ptr~'s interface is losely modeled off of ~std::unique~ and ~std::shared~.
 * Examples?
 I haven't written them here yet, but you will find some basic usage in ~tests/test.cpp~
+* Documentation
+Everything will try its best to be ~noexcept~ (if asserts are disabled) and ~constexpr~.
+** pair.hpp
+*** UInt_pair
+#+BEGIN_SRC c++
+/**
+ ,* A pair packed into a specified UInt type.
+ ,* X = the type on the "left"
+ ,* Y = the type on the "right"
+ ,* UInt = the unsigned int type to stuff the pair into
+ ,* low_bit_count_ = how many bits of the Y value do we store?
+ ,*/
+template<class X,
+         class Y,
+         std::unsigned_integral UInt,
+         int low_bit_count_ = bits::bit_sizeof<Y>>
+class UInt_pair;
+#+END_SRC
+**** constructors:
+- default constructor
+- ~UInt_pair(X,Y)~
+  #+BEGIN_SRC c++
+/**
+ ,* x = the "left" value
+ ,* y = the "right" value
+ ,*/
+explicit constexpr UInt_pair(X const x, Y const y)
+  #+END_SRC
+**** Free functions
+- ~get~ is analogous to ~std::get~.
+  - ~template<class T> bitpack::get~ returns the value of type ~T~ contained in the pair if it exists.
+  - ~template<auto i> bitpack::get~ returns the value of the ith element (i must be 0 or 1)
+**** Operators
+- ~operator==~ performs elementwise equality comparison (same as ~std::pair~'s ~==~)
+- ~operator<=>~ performs lexicographic comparison (same as ~std::pair~'s ~==~)
+- ~explicit operator std::pair<X,Y>~ returns the ~std::pair~ holding the same elements.
+*** ~uintptr_pair~
+#+BEGIN_SRC c++
+template<class X, class Y, int low_bit_count = bits::bit_sizeof<Y>>
+using uintptr_pair = UInt_pair<X, Y, uintptr_t, low_bit_count>;
+#+END_SRC
+Is a specialization of ~UInt_pair~ that always uses a ~uintptr_t~. There's also a ~make_uintptr_pair~ helper until we have alias deduction guides.
+** tagged_ptr.hpp
+*** tagged_ptr
+#+BEGIN_SRC c++
+/**
+ ,* Holds a pointer(`T*`) and puts a tag(`Tag`) in the low bits(the number
+ ,* `tag_size` of lowest bits). Optionally, use `ptr_replacement_bits` to fill
+ ,* the low bits of the pointer back in. Provide a smart pointer-- like
+ ,* interface to get at the underlying pointer.
+ ,*
+ ,* Ptr = the pointer type to hold
+ ,* Tag = the tag type to hold (probably an enum or small number)
+ ,* tag_bits_ = the number of bits needed to store the tag
+ ,* ptr_replacement_bits = if the low bits of the pointer aren't 0, what should
+ ,* they be filled in with?
+ ,*/
+template<class Ptr,
+         class Tag,
+         uintptr_t tag_bits_ = std::bit_width(alignof(traits::unptr_t<Ptr>) - 1),
+         uintptr_t ptr_replacement_bits = 0u>
+class tagged_ptr;
+#+END_SRC
+**** constructors
+- default constructor
+- ~tagged_ptr(Ptr ptr, Tag tag)~
+  #+BEGIN_SRC c++
+/**
+ ,* ptr = the pointer to store
+ ,* tag = the tag to store
+ ,*/
+explicit constexpr tagged_ptr(Ptr const ptr, Tag const tag)
+  #+END_SRC
+**** members
+- ~this->get()~ returns the pointer
+- ~this->tag()~ returns the tag
+**** operators
+- ~operator*~ dereferences the stored pointer
+- ~operator->~ calls members of the pointed-to object
+- ~operator==~ compares elementwise (pointer and tag). But if you compare against ~nullptr_t~, we just check for null-ness (regardless of tag).
+- ~operator bool~ does this point to null?
+** variant_ptr.hpp
+- default constructor
+- constructor from a pointer:
+  #+BEGIN_SRC c++
+  template<class T>
+  explicit(alignof(traits::unptr_t<T>) <= tag_bits)
+      // If alignment<= number. of tag bits, then inserting it into the variant
+      // risks clobbering meaningful low bits of the address. So we require it
+      // be done explicitly.
+      constexpr variant_ptr(T ptr)
+  #+END_SRC
+  As long as the type ~T~ has large enough alignment to store the tag, this can be implicitly constructed. Otherwise, it is up to the user to ensure there are enough free low bits, so this must be explicitly bought-into.
+*** methods
+- ~this->index()~ gives a number corresponding to the type of the currently stored value
+*** free functions
+These work like their analogues for ~std::variant~.
+- ~get<class>~ and ~get<number>~
+- ~maybe_get<class>~ and ~maybe_get<number>~ (in ~<bitpack/maybe_get.hpp>~). Because we squish the tag and the pointer into a single object, we cannot return pointers to them. So we can't implement ~get_if~. Instead, ~maybe_get~ returns an ~std::optional~. If the type is in the variant, return ~std::optional{the_value}~. Otherwise, we return ~std::nullopt~.
+- ~holds_alternative<class>~
+- ~visit~ (only takes one variant, unlike the ~std::~ version)
+*** operators
+- ~operator==~
+    Like ~tagged_ptr~, this is equality-comparable to ~std::nullptr_t~.
+- ~operator bool()~: does it hold a null pointer of any type?
+*** misc
+- ~BITPACK_UNROLL_VISIT_N~. You can ignore it safely. It shouldn't affect correctness at all. This is solely for optimization. Because ~C++20~ does not have a way to expand parameter packs into cases for a ~switch~ statement, we have to use tail recursion to implement ~visit~. To help optimizers, there are a few macros that will unroll this tail recursion into one big ~switch~ on the index. This variable macro determines up to what size ~variant_ptr~ to unroll for. See ~macros.hpp~ for more info.
