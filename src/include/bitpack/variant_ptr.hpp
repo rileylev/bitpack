@@ -29,6 +29,8 @@ template<class... Ts> struct typelist {
   template<class T, int n>
   static constexpr bool is_T_nth = std::is_same_v<T, nth<n>>;
 
+  // helper for finding the index of a given type. If its not found, return one
+  // past the end, like the STL convention
   template<class T, int N> static constexpr int find_looper() noexcept {
     if constexpr(N >= size) return N;
     // separate case to prevent instantiating is_T_nth with big N. The user gets
@@ -43,8 +45,15 @@ template<class... Ts> struct typelist {
   template<class T>
   static constexpr unsigned unguarded_find = find_looper<T, 0>();
 
+  /**
+   * Is the type T contained in this list?
+   */
   template<class T> static constexpr bool has = (unguarded_find<T> < size);
 
+  /**
+   * Find the index of a type T. Static_assert if the type T is not in this
+   * list.
+   */
   template<class T>
   static constexpr unsigned find = [] {
     static_assert(has<T>, "Type not in variant");
@@ -52,6 +61,7 @@ template<class... Ts> struct typelist {
   }();
 };
 
+// these assume an index sequence will be supplied
 /**
  * Use this to check if calling func on any of the types in a typelist can
  * throw an exception (and if asserts are off)
@@ -67,6 +77,9 @@ struct is_visit_noexcept_by_seq<variant_ptr, func, std::index_sequence<i...>> {
           && ...);
 };
 
+/**
+ * What type will a visitor return?
+ */
 template<class variant_ptr, class Func, class seq>
 struct visit_common_type_by_seq;
 
@@ -79,6 +92,17 @@ struct visit_common_type_by_seq<variant_ptr, Func, std::index_sequence<i...>> {
 } // namespace impl
 
 #if true
+/**
+ * A variant that can only store pointers. It stores the type index inline in
+ * the low bits of the pointer itself.
+ *
+ * The alignemnt of all the pointers must be big enough to hold the type tag.
+ * That's the sharp edge of this tool. You can only implicitly construct if the
+ * alignment is sufficiently large. Otherwise, you have to allocate carefully or
+ * use a different tool.
+ *
+ * Ts = the pointer types your variant_ptr can hold.
+ */
 template<class... Ts> class variant_ptr {
   using types = impl::typelist<Ts...>;
   static constexpr auto tag_bits = std::bit_width(types::size - 1);

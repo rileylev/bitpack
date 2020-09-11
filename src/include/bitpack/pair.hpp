@@ -5,11 +5,14 @@
 #include <bitpack/workaround.hpp>
 
 #include <type_traits>
-#include <concepts>
 
 namespace bitpack {
 /**
  * A pair packed into a specified UInt type.
+ * X = the type on the "left"
+ * Y = the type on the "right"
+ * UInt = the unsigned int type to stuff the pair into
+ * low_bit_count_ = how many bits of the Y value do we store?
  */
 template<class X,
          class Y,
@@ -21,6 +24,11 @@ class UInt_pair {
   static constexpr auto low_bit_count = low_bit_count_;
   static constexpr auto high_bit_count = sizeof(UInt) * 8 - low_bit_count;
   constexpr UInt_pair() = default;
+
+  /**
+   * x = the "left" value
+   * y = the "right" value
+   */
   explicit constexpr UInt_pair(X const x,
                                Y const y) noexcept(impl::is_assert_off)
       : x_{bits::as_UInt<UInt>(x)}, y_{bits::as_UInt<UInt>(y)} {
@@ -40,7 +48,10 @@ class UInt_pair {
 
   template<int i> using nth_t = std::conditional_t<i == 0, X, Y>;
 
-  template<int i> static constexpr nth_t<i> get(UInt_pair const pair) noexcept {
+  /**
+   * Return the i-th element of pair (i= 0 or 1). Read-only.
+   */
+  template<auto i> static constexpr nth_t<i> get(UInt_pair const pair) noexcept {
     static_assert(i == 0 || i == 1, "That index is out of bounds.");
     if constexpr(i == 0)
       return x(pair);
@@ -48,6 +59,9 @@ class UInt_pair {
       return y(pair);
   }
 
+  /**
+   * Return the element of type T. Warning: not a regular function.
+   */
   template<class T> static constexpr T get(UInt_pair const pair) noexcept {
     constexpr bool isX = std::is_same_v<T, X>;
     constexpr bool isY = std::is_same_v<T, Y>;
@@ -80,6 +94,7 @@ class UInt_pair {
   UInt x_ : high_bit_count;
 };
 
+// wrap a binary operator on pair by deferring to std::pair's version
 #define BITPACK_DEF_COMPARE(op)                                                \
   template<class A0,                                                           \
            class A1,                                                           \
@@ -93,7 +108,10 @@ class UInt_pair {
                    const UInt_pair<B0, B1, BUint, Bnum>& b)                    \
       BITPACK_EXPR_BODY(to_std_pair(a) op to_std_pair(b));
 
+// these defer to std::pair's relations
+// element-wise equality
 BITPACK_DEF_COMPARE(==)
+// lexicographic comparison
 BITPACK_DEF_COMPARE(<=>)
 
 template<class X, class Y, int low_bit_count = bits::bit_sizeof<Y>>
