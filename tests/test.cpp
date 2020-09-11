@@ -100,6 +100,13 @@ TEST_CASE("tagged_ptr supports dereference operators") {
     REQUIRE(*p == 3);
   }
 
+  SECTION("operator* returns an lvalue (can be assigned to)"){
+    int x = 2;
+    bitpack::tagged_ptr p{&x, 0};
+    *p=4;
+    REQUIRE(x==4);
+  }
+
   SECTION("operator->") {
     struct {
       int x;

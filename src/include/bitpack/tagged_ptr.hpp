@@ -28,6 +28,9 @@ template<class Ptr,
          uintptr_t tag_bits_ = std::bit_width(alignof(traits::unptr_t<Ptr>) - 1),
          uintptr_t ptr_replacement_bits = 0u>
 class tagged_ptr {
+ private:
+  static constexpr bool holds_void = std::is_void_v<traits::unptr_t<Ptr>>;
+
  public:
   static constexpr uintptr_t tag_bits =
       std::max<uintptr_t>(tag_bits_, 1); // can't have 0 length bitfields :C
@@ -52,10 +55,11 @@ class tagged_ptr {
     auto const pair = self.pair_;
     return decltype(pair)::y(pair);
   }
+
   constexpr Tag tag() const noexcept { return tag(*this); }
-  friend constexpr traits::unptr_t<Ptr>&
-      operator*(tagged_ptr const self) noexcept
-      requires(!std::is_void_v<traits::unptr_t<Ptr>>) {
+
+  friend constexpr traits::unptr_t<Ptr>
+      operator*(tagged_ptr const self) noexcept requires(!holds_void) {
     return *ptr(self);
   }
   constexpr Ptr operator->() const noexcept { return ptr(); }
