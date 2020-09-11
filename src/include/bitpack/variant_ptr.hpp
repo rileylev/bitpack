@@ -125,9 +125,6 @@ template<class... Ts> class variant_ptr {
       constexpr variant_ptr(T ptr) noexcept(impl::is_assert_off)
       : ptr_{ptr, types::template find<T>} {}
 
-  explicit constexpr variant_ptr(std::nullptr_t) noexcept
-      : variant_ptr(typename types::template nth<0>{nullptr}) {}
-
   // gcc 10 had a hidden friend template bug so these are static.
   // workaround.hpp defines free functions in namespace bitpack that forwards to
   // these. niebloids.hpp defines niebloids that will forward to them too.
