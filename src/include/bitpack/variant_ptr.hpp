@@ -199,39 +199,39 @@ template<class... Ts> class variant_ptr {
   // because there is no way (afaik) to generate the cases from a parameter
   // pack, I do this with macros (up to a finite limit)
 
-  // this is the finite limit for the size up to which we unroll visit into a
-  // switch
-#  ifndef BITPACK_UNROLL_VISIT_COUNT
-#    define BITPACK_UNROLL_VISIT_COUNT 4
+  // this is the finite unrolling limit
+  // note: to raise this, you might have to implement more cases for
+  // BITPACK_REPEAT
+#  ifndef BITPACK_UNROLL_VISIT_LIMIT
+#    define BITPACK_UNROLL_VISIT_LIMIT 4
 #  endif
 #  define BITPACK_VISIT_CASE(n)                                                \
     case n: return std::invoke(visitor, get<n>(self));
-  // For small sizes, we can unroll the recursion in visit_nth into one switch
-  // statement. Unfortunately, there is no way to expand a parameter pack into
-  // cases, so this uses a macro instead.
-#  define BITPACK_UNROLL_VISIT_N(n)                                            \
+  // this macro generates the visit implementation (via switch(index) ) for
+  // a variant that can take on n types
+#  define BITPACK_UNROLL_VISIT(n)                                              \
     template<class R, class Func>                                              \
-    requires(size == n) static R                                               \
+    requires(size == n) static constexpr R                                     \
         visit(Func visitor,                                                    \
               variant_ptr const self) noexcept(is_visit_noexcept<Func>) {      \
-      switch(index(self)) { BITPACK_REPEAT(BITPACK_VISIT_CASE, n) }            \
+      auto const tag = index(self);                                            \
+      BITPACK_ASSERT(0 <= tag && tag < size);                                  \
+      switch(tag) { BITPACK_REPEAT(BITPACK_VISIT_CASE, n) }                    \
     }
   // index can only be in [0, size), but the compiler does not realize this.
   // We don't need a default in the switch. Asserts + static_asserts enforce
   // this invariant.
   BITPACK_WRETURN_OFF
-  BITPACK_REPEAT_OUTER(BITPACK_UNROLL_VISIT_N, BITPACK_UNROLL_VISIT_COUNT)
+  BITPACK_REPEAT_OUTER(BITPACK_UNROLL_VISIT, BITPACK_UNROLL_VISIT_LIMIT)
   BITPACK_DIAGNOSTIC_POP
-#  undef BITPACK_UNROLL_VISIT_N
-#  undef BITPACK_VISIT_CASE
 
-  // general visit implementation via recursive templates
+  // fallback visit implementation
   template<class R, class Func>
-  requires(size >= BITPACK_UNROLL_VISIT_COUNT) //
+  requires(size >= BITPACK_UNROLL_VISIT_LIMIT) //
       static constexpr R
       visit(Func visitor,
             variant_ptr const self) noexcept(is_visit_noexcept<Func>) {
-    auto const tag = variant_ptr::index(self);
+    auto const tag = index(self);
     BITPACK_ASSERT(0 <= tag && tag < size);
     return visit_nth<R, 0>(self, visitor, tag);
   }
