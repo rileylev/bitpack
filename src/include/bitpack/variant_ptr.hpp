@@ -180,11 +180,12 @@ template<class... Ts> class variant_ptr {
                      Func visitor,
                      Tag const tag) noexcept(is_visit_noexcept<Func>) {
     static_assert(0 <= N && N < size);
+    auto const invoke_it = [&] { return std::invoke(visitor, get<N>(self)); };
     if constexpr(N == size - 1) {
-      return visitor(get<N>(self));
+      return invoke_it();
     } else {
       if(tag == N)
-        return std::invoke(visitor, get<N>(self));
+        return invoke_it();
       else
         return visit_nth<R, N + 1>(self, visitor, tag);
     }
