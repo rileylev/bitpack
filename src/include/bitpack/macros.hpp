@@ -1,10 +1,13 @@
 #ifndef BITPACK_MACROS_INCLUDE_GUARD
 #define BITPACK_MACROS_INCLUDE_GUARD
 
-// Maybe FORCEINLINE, but won't do it until there's tests to see if it generates
-// better code to check msvc, _MSC_VER to force inline on msvc, __forceinline I
-// will not write any msvc specific code until I have a way to test it set up
-
+// Customizable assert macro
+// If you define BITPACK_ENABLE_ASSERT, it will pull in the standard assert.h
+// mechanism. If you define BITPACK_ASSERT before #including this library, it
+// will use that. If you do nothing, as of now there are no asserts.
+//
+// Most of bitpack is a good candidate for inlining, so assertions might be
+// relatively costly, hence the extra indirection
 #if defined(BITPACK_ASSERT)
 #  if defined(BITPACK_ENABLE_ASSERT)
 #    undef BITPACK_ENABLE_ASSERT
@@ -24,6 +27,11 @@
 
 #define BITPACK_FWD(x) std::forward<decltype(x)>(x)
 
+// for expression bodies!
+// use this where you want to define a function whose whole body is one
+// expression this macro wil automatically propogate the return type and the
+// noexcept-ness of that expression, which helps a little with the keyword soup.
+// This also prevents the inevitable subtle noexcept/decltype typos :C
 #define BITPACK_EXPR_BODY(...)                                                 \
   noexcept(noexcept(__VA_ARGS__))->decltype(__VA_ARGS__) { return __VA_ARGS__; }
 
@@ -31,6 +39,12 @@ namespace bitpack { namespace impl {
 inline bool constexpr is_assert_off = !BITPACK_ENABLE_ASSERT;
 }} // namespace bitpack::impl
 
+// To locally turn of warnings that some paths don't return
+// in particular, in variant_ptr::visit, index must be in the range [0,size).
+// So correct code can assume as much.
+// But the compiler warnings do not know that.
+//
+// the code is based on
 // https://www.fluentcpp.com/2019/08/30/how-to-disable-a-warning-in-cpp/
 #if defined(__GNUC__) || defined(__clang__)
 #  define BITPACK_WRETURN_OFF                                                  \
@@ -46,9 +60,14 @@ inline bool constexpr is_assert_off = !BITPACK_ENABLE_ASSERT;
 #  define BITPACK_DIAGNOSTIC_POP
 #endif
 
+// here we have preprocessor looping constructs. These seem semi-standard.
+// Boost::preprocessor discusses + implements more generic facilities like these.
+//
+// concatenate two tokens *after* expanding them
 #define BITPACK_CAT(x, y) BITPACK_CAT_(x, y)
 #define BITPACK_CAT_(x, y) x##y
 
+// call macro(i) for i in [0,n)
 #define BITPACK_REPEAT(macro, n) BITPACK_CAT(BITPACK_REPEAT_, n)(macro)
 #define BITPACK_REPEAT_0(macro)
 #define BITPACK_REPEAT_1(macro) BITPACK_REPEAT_0(macro) macro(0)
