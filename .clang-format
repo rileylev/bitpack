@@ -38,7 +38,7 @@ SpaceAfterTemplateKeyword: false
 AlwaysBreakTemplateDeclarations: MultiLine
 SpaceBeforeParens: Never
 
-PenaltyBreakBeforeFirstCallParameter: 1000
+PenaltyBreakBeforeFirstCallParameter: 2000
 PenaltyExcessCharacter: 100
-PenaltyReturnTypeOnItsOwnLine: 50
+PenaltyReturnTypeOnItsOwnLine: 20
 PenaltyBreakTemplateDeclaration: 20
