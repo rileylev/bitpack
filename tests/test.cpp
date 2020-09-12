@@ -158,7 +158,7 @@ template<class... Fs> struct overload : Fs... { using Fs::operator()...; };
 template<class... Fs> overload(Fs...) -> overload<Fs...>;
 
 namespace niebloids = bitpack::niebloids;
-TEST_CASE("Niebloids give == comparable values on bitpack containers and std "
+TEST_CASE("Niebloids give == values on bitpack containers and std "
           "containers") {
   SECTION("Pairs") {
     auto const std_pair = std::pair{'a', 2};
