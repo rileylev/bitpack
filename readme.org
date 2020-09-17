@@ -5,7 +5,7 @@ A header only library that provides a few bitpacked data structures
 - ~variant_ptr~ stores a pointer plus a tag that indicates which type it points to
 These are useful building blocks for creating cache-friendly data structures.
 
-These are intended to be somewhat interopable with ~std::pair~ and ~std::variant~, with some limitations. Also, ~tagged_ptr~'s interface is losely modeled off of ~std::unique~ and ~std::shared~.
+These are intended to be somewhat interchangeable with ~std::pair~ and ~std::variant~, with some limitations. Also, ~tagged_ptr~'s interface is loosely modeled off of ~std::unique~ and ~std::shared~.
 * Examples?
 I haven't written them here yet, but you will find some basic usage in ~tests/test.cpp~
 * Documentation
@@ -87,7 +87,7 @@ explicit constexpr tagged_ptr(Ptr const ptr, Tag const tag)
 **** operators
 - ~operator*~ dereferences the stored pointer
 - ~operator->~ calls members of the pointed-to object
-- ~operator==~ compares elementwise (pointer and tag). But if you compare against ~nullptr_t~, we just check for null-ness (regardless of tag).
+- ~operator==~ compares element-wise (pointer and tag). But if you compare against ~nullptr_t~, we just check for null-ness (regardless of tag).
 - ~operator bool~ does this point to null?
 ** variant_ptr.hpp
 - default constructor

@@ -203,7 +203,7 @@ template<class... Ts> class variant_ptr {
   // note: to raise this, you might have to implement more cases for
   // BITPACK_REPEAT
 #  ifndef BITPACK_UNROLL_VISIT_LIMIT
-#    define BITPACK_UNROLL_VISIT_LIMIT 4
+#    define BITPACK_UNROLL_VISIT_LIMIT 6
 #  endif
 #  define BITPACK_VISIT_CASE(n)                                                \
     case n: return std::invoke(visitor, get<n>(self));

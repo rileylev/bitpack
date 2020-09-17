@@ -21,7 +21,7 @@
 #    include <assert.h>
 #    define BITPACK_ASSERT(...) assert(__VA_ARGS__)
 #  else
-#    define BITPACK_ASSERT(...) [] {}()
+#    define BITPACK_ASSERT(...) ((void)0)
 #  endif
 #endif
 
@@ -70,18 +70,29 @@ inline bool constexpr is_assert_off = !BITPACK_ENABLE_ASSERT;
 // call macro(i) for i in [0,n)
 #define BITPACK_REPEAT(macro, n) BITPACK_CAT(BITPACK_REPEAT_, n)(macro)
 #define BITPACK_REPEAT_0(macro)
+// #define BITPACK_REPEAT_n+1 BITPACK_REPEAT_n BITPACK_REPEAT_n
 #define BITPACK_REPEAT_1(macro) BITPACK_REPEAT_0(macro) macro(0)
 #define BITPACK_REPEAT_2(macro) BITPACK_REPEAT_1(macro) macro(1)
 #define BITPACK_REPEAT_3(macro) BITPACK_REPEAT_2(macro) macro(2)
 #define BITPACK_REPEAT_4(macro) BITPACK_REPEAT_3(macro) macro(3)
+#define BITPACK_REPEAT_5(macro) BITPACK_REPEAT_4(macro) macro(4)
+#define BITPACK_REPEAT_6(macro) BITPACK_REPEAT_5(macro) macro(5)
+#define BITPACK_REPEAT_7(macro) BITPACK_REPEAT_6(macro) macro(6)
+#define BITPACK_REPEAT_8(macro) BITPACK_REPEAT_7(macro) macro(7)
+#define BITPACK_REPEAT_9(macro) BITPACK_REPEAT_8(macro) macro(8)
 
 // macros are not re-entrant, so to have nested repetition, we need a second copy
 #define BITPACK_REPEAT_OUTER(macro, n)                                         \
   BITPACK_CAT(BITPACK_REPEAT_OUTER_, n)(macro)
 #define BITPACK_REPEAT_OUTER_0(macro)
+// #define BITPACK_REPEAT_OUTER_n+1 BITPACK_REPEAT_OUTER_n BITPACK_REPEAT_OUTER_n
 #define BITPACK_REPEAT_OUTER_1(macro) BITPACK_REPEAT_OUTER_0(macro) macro(0)
 #define BITPACK_REPEAT_OUTER_2(macro) BITPACK_REPEAT_OUTER_1(macro) macro(1)
 #define BITPACK_REPEAT_OUTER_3(macro) BITPACK_REPEAT_OUTER_2(macro) macro(2)
 #define BITPACK_REPEAT_OUTER_4(macro) BITPACK_REPEAT_OUTER_3(macro) macro(3)
-
+#define BITPACK_REPEAT_OUTER_5(macro) BITPACK_REPEAT_OUTER_4(macro) macro(4)
+#define BITPACK_REPEAT_OUTER_6(macro) BITPACK_REPEAT_OUTER_5(macro) macro(5)
+#define BITPACK_REPEAT_OUTER_7(macro) BITPACK_REPEAT_OUTER_6(macro) macro(6)
+#define BITPACK_REPEAT_OUTER_8(macro) BITPACK_REPEAT_OUTER_7(macro) macro(7)
+#define BITPACK_REPEAT_OUTER_9(macro) BITPACK_REPEAT_OUTER_8(macro) macro(8)
 #endif
