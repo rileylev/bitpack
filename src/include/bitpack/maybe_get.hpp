@@ -1,5 +1,5 @@
-#ifndef MAYBE_GET_INCLUDE_GUARD
-#define MAYBE_GET_INCLUDE_GUARD
+#ifndef BITPACK_MAYBE_GET_INCLUDE_GUARD
+#define BITPACK_MAYBE_GET_INCLUDE_GUARD
 
 #include <bitpack/macros.hpp>
 
@@ -20,4 +20,4 @@ constexpr auto maybe_get(auto const variant)
                                              : std::nullopt);
 } // namespace bitpack
 
-#endif // MAYBE_GET_INCLUDE_GUARD
+#endif //BITPACK_MAYBE_GET_INCLUDE_GUARD
