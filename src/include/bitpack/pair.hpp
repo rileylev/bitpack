@@ -51,7 +51,8 @@ class UInt_pair {
   /**
    * Return the i-th element of pair (i= 0 or 1). Read-only.
    */
-  template<auto i> static constexpr nth_t<i> get(UInt_pair const pair) noexcept {
+  template<auto i>
+  static constexpr nth_t<i> get(UInt_pair const pair) noexcept {
     static_assert(i == 0 || i == 1, "That index is out of bounds.");
     if constexpr(i == 0)
       return x(pair);
@@ -104,8 +105,8 @@ class UInt_pair {
            class B1,                                                           \
            class BUint,                                                        \
            auto Bnum>                                                          \
-  auto operator op(const UInt_pair<A0, A1, AUint, Anum>& a,                    \
-                   const UInt_pair<B0, B1, BUint, Bnum>& b)                    \
+  inline auto operator op(const UInt_pair<A0, A1, AUint, Anum>& a,             \
+                          const UInt_pair<B0, B1, BUint, Bnum>& b)             \
       BITPACK_EXPR_BODY(to_std_pair(a) op to_std_pair(b));
 
 // these defer to std::pair's relations
@@ -117,10 +118,10 @@ BITPACK_DEF_COMPARE(<=>)
 template<class X, class Y, int low_bit_count = bits::bit_sizeof<Y>>
 using uintptr_pair = UInt_pair<X, Y, uintptr_t, low_bit_count>;
 template<class X, class Y, int low_bit_count = bits::bit_sizeof<Y>>
-constexpr auto make_uintptr_pair(X x, Y y)
+inline constexpr auto make_uintptr_pair(X x, Y y)
     BITPACK_EXPR_BODY(uintptr_pair<X, Y, low_bit_count>(x, y));
 template<int N>
-constexpr auto make_uintptr_pair(auto x, auto y)
+inline constexpr auto make_uintptr_pair(auto x, auto y)
     BITPACK_EXPR_BODY(make_uintptr_pair<decltype(x), decltype(y), N>(x, y));
 
 } // namespace bitpack

@@ -6,8 +6,8 @@
 namespace bitpack { namespace traits {
 namespace impl {
 template<class T> concept Derefable = requires(T ptr) { *ptr; };
-void unptr_dispatch(void*);
-decltype(auto) unptr_dispatch(Derefable auto ptr) { return *ptr; }
+inline void unptr_dispatch(void*);
+inline decltype(auto) unptr_dispatch(Derefable auto ptr) { return *ptr; }
 } // namespace impl
 
 // unptr dereferences or converts void* -> void
