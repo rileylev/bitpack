@@ -1,45 +1,21 @@
-# This defines the development build process (for me)
-# This will set up CMAKE to work with conan without leaking the
-# conan-related details into the core project definition.
+# Bare-bones project definition.
+# It only define the logical connection between components.
 #
-# This file also sets up testing and options relevant for development
+# This file does not assume any kind of package manager.
+# It assumes dependencies will be found by find_package.
 cmake_minimum_required(VERSION 3.17)
 
-project(bitpack_top)
-set(CMAKE_WARN_DEPRICATED ON)
-set(CMAKE_FIND_PACKAGE_PREFER_CONFIG TRUE)
+include(early_hooks.cmake OPTIONAL)
 
-include(${CMAKE_BINARY_DIR}/conan_paths.cmake)
+project(bitpack
+  DESCRIPTION "Utilities for packing bits together (small pairs, tagged pointers)."
+  VERSION 0.0.0
+  LANGUAGES CXX)
 
-add_subdirectory(src)
+add_library(bitpack INTERFACE)
+add_library(bitpack::bitpack ALIAS bitpack)
+target_include_directories(bitpack
+  INTERFACE
+  include)
 
-enable_testing()
-add_subdirectory(tests)
-
-find_program(CCACHE ccache)
-if(CCACHE)
-  message(STATUS "Found ccache")
-  set(CMAKE_CXX_COMPILER_LAUNCHER ${CCACHE})
-endif()
-
-find_program(CLANGTIDY clang-tidy)
-set(CMAKE_CXX_CLANG_TIDY ${CLANGTIDY} -extra-arg=-Wno-unknown-warning-option)
-
-if (CMAKE_GENERATOR MATCHES "Visual Studio")
-else()
-add_compile_options(tester PRIVATE
-  -fsanitize=address
-  -Werror
-  -Wall
-  -Wextra
-  -Wshadow
-  -Wnon-virtual-dtor
-  -Wold-style-cast
-  -Wunused
-  -Wpedantic
-  -Wconversion
-  -Wsign-conversion
-  -Wnull-dereference
-  -Wdouble-promotion
-  )
-endif()
+target_compile_features(bitpack INTERFACE cxx_std_20)
