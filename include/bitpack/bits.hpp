@@ -3,7 +3,7 @@
 
 #include <bitpack/macros.hpp>
 
-#include <cstdint>
+#include <climits>
 #include <array>
 #include <cstring>
 #include <bit>
@@ -11,7 +11,7 @@
 
 namespace bitpack { namespace bits {
 
-template<class T> constexpr auto bit_sizeof = sizeof(T) * 8;
+template<class T> constexpr auto bit_sizeof = sizeof(T) * CHAR_BIT;
 
 // from Guidelines Support Library
 // isocpp.github.io/CppCoreGuidelines/CppCoreGuidelines#gslutil-utilities
@@ -22,15 +22,23 @@ inline constexpr T narrow(auto const x) noexcept(impl::is_assert_off) {
   return casted;
 }
 
+#if true
 // polyfill: i don't have std::bit_cast yet
 // unfortunately, this isn't truly constexpr until I get std::bit_cast
 template<class To, class From>
-inline constexpr To bit_cast(From const x) noexcept {
+inline constexpr To bit_cast(From const z) noexcept {
   static_assert(sizeof(To) == sizeof(From));
+#  if defined(__cpp_lib_bit_cast)
+  return std::bit_cast<To>(z);
+#  elif defined(__has_builtin) && __has_builtin(__builtin_bit_cast)
+  return __builtin_bit_cast(To, z);
+#  else
   To temp;
-  std::memcpy(&temp, &x, sizeof(To));
+  std::memcpy(&temp, &z, sizeof(To));
   return temp;
+#  endif
 }
+#endif
 
 /**
  * Given an object of type T, return a std::array of (a copy of) the underlying
@@ -48,13 +56,19 @@ template<std::integral T> inline constexpr T to_integer(auto const x) noexcept {
 /**
  * Given a `T`, return (a copy of) its underlying bytes as a `UInt`
  */
-template<std::unsigned_integral UInt, class T>
-inline constexpr auto as_UInt(T const x) noexcept {
+// ENDIAN??????
+template<std::unsigned_integral UInt,
+         class T,
+         std::endian endian = std::endian::native>
+inline constexpr UInt as_UInt(T const x) noexcept {
+  static_assert(endian == std::endian::little || endian == std::endian::big);
   auto const bytes = bytes_of(x);
   UInt acc{};
-  // The inliner should see through this for little endian.
-  for(auto i = 0u; i < bytes.size(); ++i) {
-    auto const this_byte = to_integer<UInt>(bytes[i]);
+  auto const size = bytes.size();
+  for(auto i = 0u; i < size; ++i) {
+    auto const lookup_idx =
+        (endian == std::endian::little) ? i : (size - i - 1);
+    auto const this_byte = to_integer<UInt>(bytes[lookup_idx]);
     acc |= (this_byte << (i * 8u));
   }
   return acc;
@@ -63,12 +77,16 @@ inline constexpr auto as_UInt(T const x) noexcept {
 /**
  * Unpack the underlying bits in a `UInt` back to `To`
  */
-template<class To, std::unsigned_integral From>
+template<class To,
+         std::unsigned_integral From,
+         std::endian endian = std::endian::native>
 inline constexpr auto from_UInt(From const from) noexcept {
   std::array<std::byte, sizeof(To)> bytes;
-  // The inliner should see through this for little endian?
-  for(auto i = 0u; i < bytes.size(); ++i)
-    bytes[i] = narrow<std::byte>((from >> (i * 8u)) & 0xFFu);
+  auto const size = bytes.size();
+  for(auto i = 0u; i < size; ++i) {
+    auto const byte_idx = (endian == std::endian::little) ? i : (size - i - 1);
+    bytes[byte_idx] = narrow<std::byte>((from >> (i * 8u)) & 0xFFu);
+  }
   return bit_cast<To>(bytes);
 }
 

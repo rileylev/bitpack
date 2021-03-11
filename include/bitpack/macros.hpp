@@ -29,7 +29,7 @@
 
 // for expression bodies!
 // use this where you want to define a function whose whole body is one
-// expression this macro wil automatically propogate the return type and the
+// expression. this macro wil automatically propogate the return type and the
 // noexcept-ness of that expression, which helps a little with the keyword soup.
 // This also prevents the inevitable subtle noexcept/decltype typos :C
 #define BITPACK_EXPR_BODY(...)                                                 \
@@ -95,4 +95,5 @@ inline bool constexpr is_assert_off = !BITPACK_ENABLE_ASSERT;
 #define BITPACK_REPEAT_OUTER_7(macro) BITPACK_REPEAT_OUTER_6(macro) macro(6)
 #define BITPACK_REPEAT_OUTER_8(macro) BITPACK_REPEAT_OUTER_7(macro) macro(7)
 #define BITPACK_REPEAT_OUTER_9(macro) BITPACK_REPEAT_OUTER_8(macro) macro(8)
-#endif
+
+#endif //BITPACK_MACROS_INCLUDE_GUARD

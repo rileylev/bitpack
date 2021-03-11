@@ -23,10 +23,10 @@ template<class... Ts> struct typelist {
  public:
   static constexpr unsigned size = sizeof...(Ts);
 
-  template<int N> using nth = std::tuple_element_t<N, type_tuple>;
+  template<size_t N> using nth = std::tuple_element_t<N, type_tuple>;
 
  private:
-  template<class T, int n>
+  template<class T, size_t n>
   static constexpr bool is_T_nth = std::is_same_v<T, nth<n>>;
 
   // helper for finding the index of a given type. If its not found, return one
@@ -85,8 +85,8 @@ struct visit_common_type_by_seq;
 
 template<class variant_ptr, class Func, auto... i>
 struct visit_common_type_by_seq<variant_ptr, Func, std::index_sequence<i...>> {
-  using type = std::common_type_t<decltype(
-      std::declval<Func>()(get<i>(std::declval<variant_ptr>())))...>;
+  using type = std::common_type_t<decltype(std::declval<Func>()(
+      get<i>(std::declval<variant_ptr>())))...>;
 };
 
 } // namespace impl
@@ -212,17 +212,19 @@ template<class... Ts> class variant_ptr {
 #  define BITPACK_UNROLL_VISIT(n)                                              \
     template<class R, class Func>                                              \
     requires(size == n) static constexpr R                                     \
-        visit(Func visitor,                                                    \
+        visit(Func visitor_,                                                   \
               variant_ptr const self) noexcept(is_visit_noexcept<Func>) {      \
       auto const tag = index(self);                                            \
-      BITPACK_ASSERT(0 <= tag && tag < size);                                  \
+      /* idk clang thinks im not using this */                                 \
+      [[maybe_unused]] auto const visitor = visitor_;                          \
+      BITPACK_ASSERT(0 <= tag && tag < bits::narrow<int>(size));               \
       switch(tag) { BITPACK_REPEAT(BITPACK_VISIT_CASE, n) }                    \
     }
   // index can only be in [0, size), but the compiler does not realize this.
   // We don't need a default in the switch. Asserts + static_asserts enforce
   // this invariant.
   BITPACK_WRETURN_OFF
-  BITPACK_REPEAT_OUTER(BITPACK_UNROLL_VISIT, BITPACK_UNROLL_VISIT_LIMIT)
+    BITPACK_REPEAT_OUTER(BITPACK_UNROLL_VISIT, BITPACK_UNROLL_VISIT_LIMIT)
   BITPACK_DIAGNOSTIC_POP
 
   // fallback visit implementation
@@ -232,7 +234,7 @@ template<class... Ts> class variant_ptr {
       visit(Func visitor,
             variant_ptr const self) noexcept(is_visit_noexcept<Func>) {
     auto const tag = index(self);
-    BITPACK_ASSERT(0 <= tag && tag < size);
+    BITPACK_ASSERT(0 <= tag && tag < bits::narrow<int>(size));
     return visit_nth<R, 0>(self, visitor, tag);
   }
 

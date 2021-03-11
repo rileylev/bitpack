@@ -16,7 +16,7 @@ BITPACK_WRAP_STATIC(class, holds_alternative)
 
 template<class R>
 inline constexpr auto visit(auto visitor, auto const self)
-    BITPACK_EXPR_BODY(decltype(self)::template visit<R>(visitor, self));
+    BITPACK_EXPR_BODY(decltype(self)::template visit<R>(visitor, self))
 inline constexpr auto visit(auto visitor, auto const self)
     BITPACK_EXPR_BODY(decltype(self)::visit(visitor, self));
 

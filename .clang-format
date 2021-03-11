@@ -38,6 +38,9 @@ SpaceAfterTemplateKeyword: false
 AlwaysBreakTemplateDeclarations: MultiLine
 SpaceBeforeParens: Never
 
+MacroBlockBegin: "BITPACK_.*_OFF"
+MacroBlockEnd: "BITPACK_DIAGNOSTIC_POP"
+
 PenaltyBreakBeforeFirstCallParameter: 2000
 PenaltyExcessCharacter: 100
 PenaltyReturnTypeOnItsOwnLine: 20

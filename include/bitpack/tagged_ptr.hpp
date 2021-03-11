@@ -25,7 +25,7 @@ namespace bitpack {
  */
 template<class Ptr,
          class Tag,
-         uintptr_t tag_bits_ = std::bit_width(alignof(traits::unptr_t<Ptr>) - 1),
+         size_t tag_bits_ = std::bit_width(alignof(traits::unptr_t<Ptr>) - 1),
          uintptr_t ptr_replacement_bits = 0u>
 class tagged_ptr {
  private:

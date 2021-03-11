@@ -17,12 +17,20 @@ namespace bitpack {
 template<class X,
          class Y,
          std::unsigned_integral UInt,
-         int low_bit_count_ = bits::bit_sizeof<Y>>
+         size_t low_bit_count_ = bits::bit_sizeof<Y>>
 class UInt_pair {
-
  public:
   static constexpr auto low_bit_count = low_bit_count_;
   static constexpr auto high_bit_count = sizeof(UInt) * 8 - low_bit_count;
+
+ private:
+  UInt y_ : low_bit_count; // little endian : low = lsb = first(lowest address)
+  UInt x_ : high_bit_count;
+
+  template<int i>
+  using nth_t = std::conditional_t<i == 0, X, Y>;
+
+ public:
   constexpr UInt_pair() = default;
 
   /**
@@ -31,7 +39,7 @@ class UInt_pair {
    */
   explicit constexpr UInt_pair(X const x,
                                Y const y) noexcept(impl::is_assert_off)
-      : x_{bits::as_UInt<UInt>(x)}, y_{bits::as_UInt<UInt>(y)} {
+      : y_{bits::as_UInt<UInt>(y)}, x_{bits::as_UInt<UInt>(x)} {
     // postcondition
     BITPACK_ASSERT(this->x() == x);
     BITPACK_ASSERT(this->y() == y);
@@ -45,8 +53,6 @@ class UInt_pair {
   }
   constexpr X x() const noexcept { return x(*this); }
   constexpr Y y() const noexcept { return y(*this); }
-
-  template<int i> using nth_t = std::conditional_t<i == 0, X, Y>;
 
   /**
    * Return the i-th element of pair (i= 0 or 1). Read-only.
@@ -89,10 +95,6 @@ class UInt_pair {
   // If user mistakenly calls it on UInt_pair, it implicitly converts to
   // std::pair<X,Y> (a temporary) and then get_if returns a pointer to the value
   // the temporary held. This is never what the user intended.
-
- private:
-  UInt y_ : low_bit_count; // little endian : low = lsb = first(lowest address)
-  UInt x_ : high_bit_count;
 };
 
 // wrap a binary operator on pair by deferring to std::pair's version
@@ -114,10 +116,11 @@ class UInt_pair {
 BITPACK_DEF_COMPARE(==)
 // lexicographic comparison
 BITPACK_DEF_COMPARE(<=>)
+#undef BITPACK_DEF_COMPARE
 
-template<class X, class Y, int low_bit_count = bits::bit_sizeof<Y>>
+template<class X, class Y, size_t low_bit_count = bits::bit_sizeof<Y>>
 using uintptr_pair = UInt_pair<X, Y, uintptr_t, low_bit_count>;
-template<class X, class Y, int low_bit_count = bits::bit_sizeof<Y>>
+template<class X, class Y, size_t low_bit_count = bits::bit_sizeof<Y>>
 inline constexpr auto make_uintptr_pair(X x, Y y)
     BITPACK_EXPR_BODY(uintptr_pair<X, Y, low_bit_count>(x, y));
 template<int N>

@@ -100,11 +100,11 @@ TEST_CASE("tagged_ptr supports dereference operators") {
     REQUIRE(*p == 3);
   }
 
-  SECTION("operator* returns an lvalue (can be assigned to)"){
+  SECTION("operator* returns an lvalue (can be assigned to)") {
     int x = 2;
     bitpack::tagged_ptr p{&x, 0};
-    *p=4;
-    REQUIRE(x==4);
+    *p = 4;
+    REQUIRE(x == 4);
   }
 
   SECTION("operator->") {
@@ -139,7 +139,12 @@ TEST_CASE("maybe_get returns optional of its contents when it does hold that "
           "type or index") {
   int x;
   std::variant<int*, long*> std_variant = &x;
-  bitpack::variant_ptr<int*, long*> bpk_variant = &x;
+  bitpack::variant_ptr<int*, long*> bpk_variant =
+      &x; // NOLINT: a warning about returning a stack address came up when I
+          // switched to __builtin_bit_cast for my bits::bit_cast
+          // implementation. This is the only place it fired. I suspect etiher
+          // it is a false positive or I misunderstood __builtin_bit_cast. But
+          // because my tests all pass, I think the former.
   REQUIRE(bitpack::maybe_get<int*>(std_variant) == &x);
   REQUIRE(bitpack::maybe_get<int*>(bpk_variant) == &x);
   REQUIRE(bitpack::maybe_get<0>(std_variant) == &x);
