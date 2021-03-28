@@ -63,7 +63,7 @@ template<std::unsigned_integral UInt,
 inline constexpr UInt as_UInt(T const x) noexcept {
   static_assert(endian == std::endian::little || endian == std::endian::big);
   auto const bytes = bytes_of(x);
-  UInt acc{};
+  UInt       acc{};
   auto const size = bytes.size();
   for(auto i = 0u; i < size; ++i) {
     auto const lookup_idx =
@@ -79,13 +79,13 @@ inline constexpr UInt as_UInt(T const x) noexcept {
  */
 template<class To,
          std::unsigned_integral From,
-         std::endian endian = std::endian::native>
+         std::endian            endian = std::endian::native>
 inline constexpr auto from_UInt(From const from) noexcept {
   std::array<std::byte, sizeof(To)> bytes;
-  auto const size = bytes.size();
+  auto const                        size = bytes.size();
   for(auto i = 0u; i < size; ++i) {
     auto const byte_idx = (endian == std::endian::little) ? i : (size - i - 1);
-    bytes[byte_idx] = narrow<std::byte>((from >> (i * 8u)) & 0xFFu);
+    bytes[byte_idx]     = narrow<std::byte>((from >> (i * 8u)) & 0xFFu);
   }
   return bit_cast<To>(bytes);
 }

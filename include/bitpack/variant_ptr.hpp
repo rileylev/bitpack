@@ -32,9 +32,9 @@ template<class... Ts> struct typelist {
   // helper for finding the index of a given type. If its not found, return one
   // past the end, like the STL convention
   template<class T, int N> static constexpr int find_looper() noexcept {
-    if constexpr(N >= size) return N;
     // separate case to prevent instantiating is_T_nth with big N. The user gets
     // our error instead of std::tuple's
+    if constexpr(N >= size) return N;
     else if(is_T_nth<T, N>)
       return N;
     else

@@ -1,8 +1,14 @@
 # -*- mode: yaml; -*-
 Language: Cpp
 PointerAlignment: Left
+
 AlignAfterOpenBracket: true
 AlignEscapedNewlines: Right
+
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveDeclarations: Consecutive
+AlignConsecutiveMacros: Consecutive
+
 AllowAllArgumentsOnNextLine: false
 AllowAllParametersOfDeclarationOnNextLine: false
 AllowShortCaseLabelsOnASingleLine: true

@@ -64,7 +64,7 @@ inline bool constexpr is_assert_off = !BITPACK_ENABLE_ASSERT;
 // Boost::preprocessor discusses + implements more generic facilities like these.
 //
 // concatenate two tokens *after* expanding them
-#define BITPACK_CAT(x, y) BITPACK_CAT_(x, y)
+#define BITPACK_CAT(x, y)  BITPACK_CAT_(x, y)
 #define BITPACK_CAT_(x, y) x##y
 
 // call macro(i) for i in [0,n)
@@ -96,4 +96,4 @@ inline bool constexpr is_assert_off = !BITPACK_ENABLE_ASSERT;
 #define BITPACK_REPEAT_OUTER_8(macro) BITPACK_REPEAT_OUTER_7(macro) macro(7)
 #define BITPACK_REPEAT_OUTER_9(macro) BITPACK_REPEAT_OUTER_8(macro) macro(8)
 
-#endif //BITPACK_MACROS_INCLUDE_GUARD
+#endif // BITPACK_MACROS_INCLUDE_GUARD

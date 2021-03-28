@@ -17,18 +17,17 @@ namespace bitpack {
 template<class X,
          class Y,
          std::unsigned_integral UInt,
-         size_t low_bit_count_ = bits::bit_sizeof<Y>>
+         size_t                 low_bit_count_ = bits::bit_sizeof<Y>>
 class UInt_pair {
  public:
-  static constexpr auto low_bit_count = low_bit_count_;
+  static constexpr auto low_bit_count  = low_bit_count_;
   static constexpr auto high_bit_count = sizeof(UInt) * 8 - low_bit_count;
 
  private:
   UInt y_ : low_bit_count; // little endian : low = lsb = first(lowest address)
   UInt x_ : high_bit_count;
 
-  template<int i>
-  using nth_t = std::conditional_t<i == 0, X, Y>;
+  template<int i> using nth_t = std::conditional_t<i == 0, X, Y>;
 
  public:
   constexpr UInt_pair() = default;
@@ -58,8 +57,8 @@ class UInt_pair {
    * Return the i-th element of pair (i= 0 or 1). Read-only.
    */
   template<auto i>
-  static constexpr nth_t<i> get(UInt_pair const pair) noexcept {
-    static_assert(i == 0 || i == 1, "That index is out of bounds.");
+  static constexpr nth_t<i> get(UInt_pair const pair) noexcept
+      requires(i == 0 || i == 1) {
     if constexpr(i == 0)
       return x(pair);
     else if(i == 1)
