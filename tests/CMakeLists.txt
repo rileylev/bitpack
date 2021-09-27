@@ -8,7 +8,6 @@ project(bitpack_test)
 include(early_hook.cmake)
 
 add_executable(tester test.cpp)
-add_test(NAME bitpack.test COMMAND tester)
 find_package(Catch2 REQUIRED)
 
 set(CMAKE_BUILD_TYPE Debug)

@@ -1,4 +1,5 @@
 #define CATCH_CONFIG_MAIN
+#define BITPACK_UNROLL_VISIT_LIMIT 3
 
 #include <string>
 #include <exception>
@@ -26,10 +27,11 @@ TEST_CASE("The asserts are on") {
   REQUIRE_THROWS(BITPACK_ASSERT(false));
 }
 
-#if defined(__cpp_lib_bit_cast) || (defined(__has_builtin) && __has_builtin(__builtin_bit_cast))
-#define STATISH_REQUIRE STATIC_REQUIRE
+#if defined(__cpp_lib_bit_cast)                                                \
+    || (defined(__has_builtin) && __has_builtin(__builtin_bit_cast))
+#  define STATISH_REQUIRE STATIC_REQUIRE
 #else
-#define STATISH_REQUIRE REQUIRE
+#  define STATISH_REQUIRE REQUIRE
 #endif
 
 TEST_CASE("from_uintptr and as_uintptr are inverses") {
@@ -37,7 +39,7 @@ TEST_CASE("from_uintptr and as_uintptr are inverses") {
   using namespace bitpack::bits;
   STATISH_REQUIRE(from_uintptr_t<int>(as_uintptr_t(x)) == x);
 
-  uintptr_t const  y = 1340918;
+  uintptr_t const y = 1340918;
   STATISH_REQUIRE(as_uintptr_t(from_uintptr_t<intptr_t>(y)) == y);
 }
 
@@ -90,7 +92,7 @@ TEST_CASE(
   REQUIRE(nullptr == p);
 
   int x = 5;
-  p = bitpack::tagged_ptr<int*, int>{&x, 0};
+  p     = bitpack::tagged_ptr<int*, int>{&x, 0};
   REQUIRE(p != nullptr);
   REQUIRE(nullptr != p);
 
@@ -101,13 +103,13 @@ TEST_CASE(
 
 TEST_CASE("tagged_ptr supports dereference operators") {
   SECTION("operator*") {
-    int x = 3;
+    int                 x = 3;
     bitpack::tagged_ptr p{&x, 0};
     REQUIRE(*p == 3);
   }
 
   SECTION("operator* returns an lvalue (can be assigned to)") {
-    int x = 2;
+    int                 x = 2;
     bitpack::tagged_ptr p{&x, 0};
     *p = 4;
     REQUIRE(x == 4);
@@ -124,8 +126,8 @@ TEST_CASE("tagged_ptr supports dereference operators") {
 
 TEST_CASE("maybe_get returns nullopt if its argument does not hold the given "
           "type or index") {
-  int x;
-  std::variant<int*, long*> std_variant = &x;
+  int                               x;
+  std::variant<int*, long*>         std_variant = &x;
   bitpack::variant_ptr<int*, long*> bpk_variant = &x;
   REQUIRE(bitpack::maybe_get<long*>(std_variant) == std::nullopt);
   REQUIRE(bitpack::maybe_get<long*>(bpk_variant) == std::nullopt);
@@ -143,8 +145,8 @@ TEST_CASE("maybe_get returns nullopt if its argument does not hold the given "
 
 TEST_CASE("maybe_get returns optional of its contents when it does hold that "
           "type or index") {
-  int x;
-  std::variant<int*, long*> std_variant = &x;
+  int                               x;
+  std::variant<int*, long*>         std_variant = &x;
   bitpack::variant_ptr<int*, long*> bpk_variant =
       &x; // NOLINT: a warning about returning a stack address came up when I
           // switched to __builtin_bit_cast for my bits::bit_cast
@@ -190,7 +192,7 @@ TEST_CASE("Niebloids give == values on bitpack containers and std "
     using BpkVariant = bitpack::variant_ptr<int*, float*, std::string*>;
     using StdVariant = std::variant<int*, float*, std::string*>;
 
-    int x = 3;
+    int        x           = 3;
     BpkVariant bpk_variant = &x;
     StdVariant std_variant = &x;
     SECTION("get_n") {
@@ -210,7 +212,7 @@ TEST_CASE("Niebloids give == values on bitpack containers and std "
               == niebloids::holds_alternative<std::string*>(bpk_variant));
     }
     using namespace std::literals;
-    SECTION("visit") {
+    SECTION("visit--unrolled") {
       auto const visitor =
           overload{[](int*) { return "int*"s; },
                    [](float*) { return "float*"s; },
@@ -230,6 +232,22 @@ TEST_CASE("Niebloids give == values on bitpack containers and std "
       std_variant = &z;
       REQUIRE(niebloids::visit(visitor, bpk_variant)
               == niebloids::visit(visitor, std_variant));
+    }
+    SECTION("visit--fallback") {
+      bitpack::variant_ptr<int*, float*, char*, void*, double*> var;
+
+      auto const visitor = overload{[](int*) { return "int*"s; },
+                                    [](float*) { return "float*"s; },
+                                    [](char*) { return "char*"s; },
+                                    [](void*) { return "void*"s; },
+                                    [](double*) { return "double*"s; }};
+
+      int x_ = 3;
+      var   = &x_;
+      REQUIRE(niebloids::visit(visitor, var) == "int*"s);
+
+      var = static_cast<decltype(var)>(static_cast<void*>(&x_));
+      REQUIRE(niebloids::visit(visitor, var) == "void*"s);
     }
   }
 }
