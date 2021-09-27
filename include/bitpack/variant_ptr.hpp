@@ -6,6 +6,8 @@
 #include "tagged_ptr.hpp"
 #include "workaround.hpp"
 
+#include "hedley.h"
+
 #include <bit>
 #include <tuple>
 
@@ -227,9 +229,11 @@ template<class... Ts> class variant_ptr {
 
     return [&]<auto... I>(std::index_sequence<I...>) {
       R ret;
-      (void)(((tag == I) and (ret = std::invoke(visitor, get<I>(self)), true))
-             or ...);
-      return ret;
+      if((((tag == I) and (ret = std::invoke(visitor, get<I>(self)), true))
+          or ...))
+        return ret;
+      else
+        HEDLEY_UNREACHABLE();
     }
     (std::index_sequence_for<Ts...>{});
   }
