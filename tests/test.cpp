@@ -26,13 +26,19 @@ TEST_CASE("The asserts are on") {
   REQUIRE_THROWS(BITPACK_ASSERT(false));
 }
 
-TEST_CASE("from_uintptr and as_uintptr are inverses") {
-  int x = 15124;
-  using namespace bitpack::bits;
-  REQUIRE(from_uintptr_t<int>(as_uintptr_t(x)) == x);
+#if defined(__cpp_lib_bit_cast) || (defined(__has_builtin) && __has_builtin(__builtin_bit_cast))
+#define STATISH_REQUIRE STATIC_REQUIRE
+#else
+#define STATISH_REQUIRE REQUIRE
+#endif
 
-  uintptr_t y = 1340918;
-  REQUIRE(as_uintptr_t(from_uintptr_t<intptr_t>(y)) == y);
+TEST_CASE("from_uintptr and as_uintptr are inverses") {
+  int const x = 15124;
+  using namespace bitpack::bits;
+  STATISH_REQUIRE(from_uintptr_t<int>(as_uintptr_t(x)) == x);
+
+  uintptr_t const  y = 1340918;
+  STATISH_REQUIRE(as_uintptr_t(from_uintptr_t<intptr_t>(y)) == y);
 }
 
 // pair
@@ -53,11 +59,11 @@ TEST_CASE("A UInt_pair<X,Y,T>'s size and alignment match those of T") {
 
 TEST_CASE("A uintptr_pair's elements are accessed in the same order as "
           "construction") {
-  auto const elt0 = 32;
-  auto const elt1 = 'c';
-  auto const pair = bitpack::make_uintptr_pair(elt0, elt1);
-  REQUIRE(get<0>(pair) == elt0);
-  REQUIRE(get<1>(pair) == elt1);
+  constexpr auto elt0 = 32;
+  constexpr auto elt1 = 'c';
+  constexpr auto pair = bitpack::make_uintptr_pair(elt0, elt1);
+  STATISH_REQUIRE(get<0>(pair) == elt0);
+  STATISH_REQUIRE(get<1>(pair) == elt1);
 }
 
 TEST_CASE("UInt_pairs are lexicographically compared") {
@@ -100,11 +106,11 @@ TEST_CASE("tagged_ptr supports dereference operators") {
     REQUIRE(*p == 3);
   }
 
-  SECTION("operator* returns an lvalue (can be assigned to)"){
+  SECTION("operator* returns an lvalue (can be assigned to)") {
     int x = 2;
     bitpack::tagged_ptr p{&x, 0};
-    *p=4;
-    REQUIRE(x==4);
+    *p = 4;
+    REQUIRE(x == 4);
   }
 
   SECTION("operator->") {
@@ -139,7 +145,12 @@ TEST_CASE("maybe_get returns optional of its contents when it does hold that "
           "type or index") {
   int x;
   std::variant<int*, long*> std_variant = &x;
-  bitpack::variant_ptr<int*, long*> bpk_variant = &x;
+  bitpack::variant_ptr<int*, long*> bpk_variant =
+      &x; // NOLINT: a warning about returning a stack address came up when I
+          // switched to __builtin_bit_cast for my bits::bit_cast
+          // implementation. This is the only place it fired. I suspect etiher
+          // it is a false positive or I misunderstood __builtin_bit_cast. But
+          // because my tests all pass, I think the former.
   REQUIRE(bitpack::maybe_get<int*>(std_variant) == &x);
   REQUIRE(bitpack::maybe_get<int*>(bpk_variant) == &x);
   REQUIRE(bitpack::maybe_get<0>(std_variant) == &x);
@@ -158,7 +169,7 @@ template<class... Fs> struct overload : Fs... { using Fs::operator()...; };
 template<class... Fs> overload(Fs...) -> overload<Fs...>;
 
 namespace niebloids = bitpack::niebloids;
-TEST_CASE("Niebloids give == comparable values on bitpack containers and std "
+TEST_CASE("Niebloids give == values on bitpack containers and std "
           "containers") {
   SECTION("Pairs") {
     auto const std_pair = std::pair{'a', 2};

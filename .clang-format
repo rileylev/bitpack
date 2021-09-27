@@ -1,8 +1,14 @@
 # -*- mode: yaml; -*-
 Language: Cpp
 PointerAlignment: Left
+
 AlignAfterOpenBracket: true
 AlignEscapedNewlines: Right
+
+AlignConsecutiveAssignments: Consecutive
+AlignConsecutiveDeclarations: Consecutive
+AlignConsecutiveMacros: Consecutive
+
 AllowAllArgumentsOnNextLine: false
 AllowAllParametersOfDeclarationOnNextLine: false
 AllowShortCaseLabelsOnASingleLine: true
@@ -38,7 +44,10 @@ SpaceAfterTemplateKeyword: false
 AlwaysBreakTemplateDeclarations: MultiLine
 SpaceBeforeParens: Never
 
-PenaltyBreakBeforeFirstCallParameter: 1000
+MacroBlockBegin: "BITPACK_.*_OFF"
+MacroBlockEnd: "BITPACK_DIAGNOSTIC_POP"
+
+PenaltyBreakBeforeFirstCallParameter: 2000
 PenaltyExcessCharacter: 100
-PenaltyReturnTypeOnItsOwnLine: 50
+PenaltyReturnTypeOnItsOwnLine: 20
 PenaltyBreakTemplateDeclaration: 20

@@ -1,8 +1,8 @@
 #ifndef BITPACK_TAGGED_PTR_INCLUDE_GUARD
 #define BITPACK_TAGGED_PTR_INCLUDE_GUARD
 
-#include <bitpack/traits.hpp>
-#include <bitpack/pair.hpp>
+#include "traits.hpp"
+#include "pair.hpp"
 
 #include <cstddef>
 #include <bit>
@@ -25,7 +25,7 @@ namespace bitpack {
  */
 template<class Ptr,
          class Tag,
-         uintptr_t tag_bits_ = std::bit_width(alignof(traits::unptr_t<Ptr>) - 1),
+         size_t tag_bits_ = std::bit_width(alignof(traits::unptr_t<Ptr>) - 1),
          uintptr_t ptr_replacement_bits = 0u>
 class tagged_ptr {
  private:
