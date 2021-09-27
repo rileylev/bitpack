@@ -35,7 +35,8 @@ template<class... Ts> struct typelist {
   template<class T, int N> static constexpr int find_looper() noexcept {
     // separate case to prevent instantiating is_T_nth with big N. The user gets
     // our error instead of std::tuple's
-    if constexpr(N >= size) return N;
+    if constexpr(N >= size)
+      return N;
     else if(is_T_nth<T, N>)
       return N;
     else
@@ -105,12 +106,12 @@ struct visit_common_type_by_seq<variant_ptr, Func, std::index_sequence<i...>> {
  * Ts = the pointer types your variant_ptr can hold.
  */
 template<class... Ts> class variant_ptr {
-  using types = impl::typelist<Ts...>;
+  using types                    = impl::typelist<Ts...>;
   static constexpr auto tag_bits = std::bit_width(types::size - 1);
 
  public:
   static constexpr auto size = types::size;
-  using Tag = int;
+  using Tag                  = int;
   static constexpr Tag index(variant_ptr const self) noexcept {
     auto const ptr = self.ptr_;
     return decltype(ptr)::tag(ptr);
@@ -118,11 +119,15 @@ template<class... Ts> class variant_ptr {
   constexpr Tag index() const noexcept { return index(*this); }
 
   constexpr variant_ptr() = default;
+  // explicit(construct_variantptr_explicit<T>) <- why did this break
   template<class T>
-  explicit(alignof(traits::unptr_t<T>) <= tag_bits)
-      // If alignment<= number. of tag bits, then inserting it into the variant
-      // risks clobbering meaningful low bits of the address. So we require it
-      // be done explicitly.
+  explicit(alignof(std::conditional_t<std::is_void_v<traits::unptr_t<T>>,
+                                      char,
+                                      traits::unptr_t<T>>)
+           <= tag_bits)
+      // ovrload resolution??? If alignment<= number. of tag bits, then
+      // inserting it into the variant risks clobbering meaningful low bits of
+      // the address. So we require it be done explicitly.
       constexpr variant_ptr(T ptr) noexcept(impl::is_assert_off)
       : ptr_{ptr, types::template find<T>} {}
 
@@ -175,23 +180,6 @@ template<class... Ts> class variant_ptr {
       Func,
       std::make_index_sequence<size>>::type;
 
-  // generic case visitor that uses template recursion
-  template<class R, Tag N, class Func>
-  static R visit_nth(variant_ptr const self,
-                     Func visitor,
-                     Tag const tag) noexcept(is_visit_noexcept<Func>) {
-    static_assert(0 <= N && N < size);
-    auto const invoke_it = [&] { return std::invoke(visitor, get<N>(self)); };
-    if constexpr(N == size - 1) {
-      return invoke_it();
-    } else {
-      if(tag == N)
-        return invoke_it();
-      else
-        return visit_nth<R, N + 1>(self, visitor, tag);
-    }
-  }
-
   tagged_ptr<void*, Tag, tag_bits> ptr_;
 
  public:
@@ -213,7 +201,7 @@ template<class... Ts> class variant_ptr {
 #  define BITPACK_UNROLL_VISIT(n)                                              \
     template<class R, class Func>                                              \
     requires(size == n) static constexpr R                                     \
-        visit(Func visitor_,                                                   \
+        visit(Func              visitor_,                                      \
               variant_ptr const self) noexcept(is_visit_noexcept<Func>) {      \
       auto const tag = index(self);                                            \
       /* idk clang thinks im not using this */                                 \
@@ -232,11 +220,18 @@ template<class... Ts> class variant_ptr {
   template<class R, class Func>
   requires(size >= BITPACK_UNROLL_VISIT_LIMIT) //
       static constexpr R
-      visit(Func visitor,
+      visit(Func              visitor,
             variant_ptr const self) noexcept(is_visit_noexcept<Func>) {
     auto const tag = index(self);
     BITPACK_ASSERT(0 <= tag && tag < bits::narrow<int>(size));
-    return visit_nth<R, 0>(self, visitor, tag);
+
+    return [&]<auto... I>(std::index_sequence<I...>) {
+      R ret;
+      (void)(((tag == I) and (ret = std::invoke(visitor, get<I>(self)), true))
+             or ...);
+      return ret;
+    }
+    (std::index_sequence_for<Ts...>{});
   }
 
   template<class Func>
