@@ -26,13 +26,19 @@ TEST_CASE("The asserts are on") {
   REQUIRE_THROWS(BITPACK_ASSERT(false));
 }
 
-TEST_CASE("from_uintptr and as_uintptr are inverses") {
-  int x = 15124;
-  using namespace bitpack::bits;
-  REQUIRE(from_uintptr_t<int>(as_uintptr_t(x)) == x);
+#if defined(__cpp_lib_bit_cast) || (defined(__has_builtin) && __has_builtin(__builtin_bit_cast))
+#define STATISH_REQUIRE STATIC_REQUIRE
+#else
+#define STATISH_REQUIRE REQUIRE
+#endif
 
-  uintptr_t y = 1340918;
-  REQUIRE(as_uintptr_t(from_uintptr_t<intptr_t>(y)) == y);
+TEST_CASE("from_uintptr and as_uintptr are inverses") {
+  int const x = 15124;
+  using namespace bitpack::bits;
+  STATISH_REQUIRE(from_uintptr_t<int>(as_uintptr_t(x)) == x);
+
+  uintptr_t const  y = 1340918;
+  STATISH_REQUIRE(as_uintptr_t(from_uintptr_t<intptr_t>(y)) == y);
 }
 
 // pair
@@ -53,11 +59,11 @@ TEST_CASE("A UInt_pair<X,Y,T>'s size and alignment match those of T") {
 
 TEST_CASE("A uintptr_pair's elements are accessed in the same order as "
           "construction") {
-  auto const elt0 = 32;
-  auto const elt1 = 'c';
-  auto const pair = bitpack::make_uintptr_pair(elt0, elt1);
-  REQUIRE(get<0>(pair) == elt0);
-  REQUIRE(get<1>(pair) == elt1);
+  constexpr auto elt0 = 32;
+  constexpr auto elt1 = 'c';
+  constexpr auto pair = bitpack::make_uintptr_pair(elt0, elt1);
+  STATISH_REQUIRE(get<0>(pair) == elt0);
+  STATISH_REQUIRE(get<1>(pair) == elt1);
 }
 
 TEST_CASE("UInt_pairs are lexicographically compared") {

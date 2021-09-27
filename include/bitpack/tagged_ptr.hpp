@@ -1,8 +1,8 @@
 #ifndef BITPACK_TAGGED_PTR_INCLUDE_GUARD
 #define BITPACK_TAGGED_PTR_INCLUDE_GUARD
 
-#include <bitpack/traits.hpp>
-#include <bitpack/pair.hpp>
+#include "traits.hpp"
+#include "pair.hpp"
 
 #include <cstddef>
 #include <bit>

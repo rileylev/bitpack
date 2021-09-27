@@ -1,11 +1,12 @@
 #ifndef BITPACK_VARIANT_PTR_INCLUDE_GUARD
 #define BITPACK_VARIANT_PTR_INCLUDE_GUARD
 
-#include <bitpack/macros.hpp>
-#include <bitpack/traits.hpp>
-#include <bitpack/tagged_ptr.hpp>
-#include <bitpack/workaround.hpp>
+#include "macros.hpp"
+#include "traits.hpp"
+#include "tagged_ptr.hpp"
+#include "workaround.hpp"
 
+#include <bit>
 #include <tuple>
 
 namespace bitpack {

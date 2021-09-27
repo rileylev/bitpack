@@ -3,7 +3,7 @@
 
 // gcc had trouble with hidden friend templates so I made them static and wrote
 // free/namespace level wrappers to approximate that same interface
-#include <bitpack/macros.hpp>
+#include "macros.hpp"
 #define BITPACK_WRAP_STATIC(template_type, name)                               \
   template<template_type X>                                                    \
   inline constexpr auto name(auto const self)                                  \

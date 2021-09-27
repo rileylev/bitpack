@@ -1,8 +1,8 @@
 #ifndef BITPACK_PAIR_INCLUDE_GUARD
 #define BITPACK_PAIR_INCLUDE_GUARD
 
-#include <bitpack/bits.hpp>
-#include <bitpack/workaround.hpp>
+#include "bits.hpp"
+#include "workaround.hpp"
 
 #include <type_traits>
 

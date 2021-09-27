@@ -1,8 +1,9 @@
 #ifndef BITPACK_BITS_INCLUDE_GUARD
 #define BITPACK_BITS_INCLUDE_GUARD
 
-#include <bitpack/macros.hpp>
+#include "macros.hpp"
 
+#include <cstdint>
 #include <climits>
 #include <array>
 #include <cstring>
@@ -45,7 +46,7 @@ inline constexpr To bit_cast(From const z) noexcept {
  * bytes.
  */
 template<class T> inline constexpr auto bytes_of(T const x) noexcept {
-  return bit_cast<std::array<std::byte, sizeof(x)>>(x);
+  return bits::bit_cast<std::array<std::byte, sizeof(x)>>(x);
 }
 
 // polyfill: I don't have std::to_integer yet
@@ -69,7 +70,7 @@ inline constexpr UInt as_UInt(T const x) noexcept {
     auto const lookup_idx =
         (endian == std::endian::little) ? i : (size - i - 1);
     auto const this_byte = to_integer<UInt>(bytes[lookup_idx]);
-    acc |= (this_byte << (i * 8u));
+    acc |= (this_byte << (i * CHAR_BIT));
   }
   return acc;
 }
@@ -85,9 +86,9 @@ inline constexpr auto from_UInt(From const from) noexcept {
   auto const                        size = bytes.size();
   for(auto i = 0u; i < size; ++i) {
     auto const byte_idx = (endian == std::endian::little) ? i : (size - i - 1);
-    bytes[byte_idx]     = narrow<std::byte>((from >> (i * 8u)) & 0xFFu);
+    bytes[byte_idx]     = narrow<std::byte>((from >> (i * CHAR_BIT)) & UCHAR_MAX);
   }
-  return bit_cast<To>(bytes);
+  return bits::bit_cast<To>(bytes);
 }
 
 inline constexpr auto as_uintptr_t(auto const x) noexcept {

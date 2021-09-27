@@ -7,6 +7,7 @@ cmake_minimum_required(VERSION 3.17)
 
 set(CMAKE_WARN_DEPRICATED ON)
 set(CMAKE_FIND_PACKAGE_PREFER_CONFIG TRUE)
+set(CMAKE_EXPORT_COMPILE_COMMANDS ON)
 
 enable_testing()
 
@@ -17,4 +18,3 @@ if(CCACHE)
 else()
   message(STATUS "Couldn't find ccache")
 endif()
-

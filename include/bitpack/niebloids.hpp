@@ -1,7 +1,7 @@
 #ifndef BITPACK_NIEBLOIDS_INCLUDE_GUARD
 #define BITPACK_NIEBLOIDS_INCLUDE_GUARD
 
-#include <bitpack/macros.hpp>
+#include "macros.hpp"
 
 #include <variant>
 
